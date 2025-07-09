@@ -112,11 +112,7 @@ func (c *Profile) SSOLoginWithToken(ctx context.Context, cfg *aws.Config, access
 			stsClient := sts.New(sts.Options{Credentials: aws.NewCredentialsCache(credProvider), Region: region})
 			stsp := stscreds.NewAssumeRoleProvider(stsClient, p.AWSConfig.RoleARN, func(aro *stscreds.AssumeRoleOptions) {
 				// all configuration goes in here for this profile
-				if p.AWSConfig.RoleSessionName != "" {
-					aro.RoleSessionName = p.AWSConfig.RoleSessionName
-				} else {
-					aro.RoleSessionName = sessionName()
-				}
+				aro.RoleSessionName = getRoleSessionNameFromProfile(p)
 				if p.AWSConfig.MFASerial != "" {
 					aro.SerialNumber = &p.AWSConfig.MFASerial
 					aro.TokenProvider = MfaTokenProvider

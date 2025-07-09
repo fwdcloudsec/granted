@@ -120,11 +120,8 @@ func (aia *AwsIamAssumer) AssumeTerminal(ctx context.Context, c *Profile, config
 					aro.SerialNumber = aws.String(c.AWSConfig.MFASerial)
 				}
 			}
-			if c.AWSConfig.RoleSessionName != "" {
-				aro.RoleSessionName = c.AWSConfig.RoleSessionName
-			} else {
-				aro.RoleSessionName = sessionName()
-			}
+
+			aro.RoleSessionName = getRoleSessionNameFromProfile(c)
 		}))
 
 		cfg, err := config.LoadDefaultConfig(ctx, opts...)
