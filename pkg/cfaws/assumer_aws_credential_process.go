@@ -66,11 +66,7 @@ func (cpa *CredentialProcessAssumer) AssumeTerminal(ctx context.Context, c *Prof
 			return aws.Credentials{}, err
 		}
 		stsp := stscreds.NewAssumeRoleProvider(sts.New(sts.Options{Credentials: aws.NewCredentialsCache(&CredProv{creds}), Region: region}), c.AWSConfig.RoleARN, func(aro *stscreds.AssumeRoleOptions) {
-			if c.AWSConfig.RoleSessionName != "" {
-				aro.RoleSessionName = c.AWSConfig.RoleSessionName
-			} else {
-				aro.RoleSessionName = sessionName()
-			}
+			aro.RoleSessionName = getRoleSessionNameFromProfile(c)
 			if c.AWSConfig.MFASerial != "" {
 				aro.SerialNumber = &c.AWSConfig.MFASerial
 				aro.TokenProvider = MfaTokenProvider
