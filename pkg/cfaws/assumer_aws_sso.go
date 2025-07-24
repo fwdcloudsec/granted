@@ -212,7 +212,6 @@ func (c *Profile) SSOLogin(ctx context.Context, configOpts ConfigOpts) (aws.Cred
 
 	cfg := aws.NewConfig()
 	cfg.Region = c.SSORegion()
-
 	return c.SSOLoginWithToken(ctx, cfg, accessToken, secureSSOTokenStorage, configOpts)
 }
 
