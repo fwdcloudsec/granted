@@ -284,6 +284,7 @@ func AssumeCommand(c *cli.Context) error {
 		MFATokenCode: assumeFlags.String("mfa-token"),
 		Args:         assumeFlags.StringSlice("pass-through"),
 		DisableCache: assumeFlags.Bool("no-cache"),
+		Refresh:      assumeFlags.Bool("refresh"),
 	}
 
 	// attempt to get session duration from profile
