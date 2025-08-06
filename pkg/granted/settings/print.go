@@ -7,6 +7,7 @@ import (
 	"github.com/common-fate/granted/pkg/config"
 	"github.com/fatih/structs"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/urfave/cli/v2"
 )
 
@@ -18,8 +19,8 @@ var PrintCommand = cli.Command{
 		if err != nil {
 			return err
 		}
-		data := [][]string{
-			{"update-checker-api-url", c.String("update-checker-api-url")},
+		data := []any{
+			[]string{"update-checker-api-url", c.String("update-checker-api-url")},
 		}
 		// display config, this uses reflection to convert the config struct to a map
 		// it will always show all the values in the config without us having to update it
@@ -27,21 +28,26 @@ var PrintCommand = cli.Command{
 			data = append(data, []string{k, fmt.Sprint(v)})
 		}
 
-		table := tablewriter.NewWriter(os.Stderr)
-		table.SetHeader([]string{"SETTING", "VALUE"})
-		table.SetAutoWrapText(false)
-		table.SetAutoFormatHeaders(true)
-		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.SetCenterSeparator("")
-		table.SetColumnSeparator("")
-		table.SetRowSeparator("")
-		table.SetRowLine(true)
-		table.SetHeaderLine(false)
-		table.SetBorder(false)
-		table.SetTablePadding("\t")
-		table.SetNoWhiteSpace(true)
-		table.AppendBulk(data)
+		table := tablewriter.NewTable(os.Stderr,
+			tablewriter.WithConfig(tablewriter.NewConfigBuilder().
+				WithRowAutoWrap(tw.WrapNone).
+				WithHeaderAutoFormat(tw.On).
+				WithHeaderAlignment(tw.AlignLeft).
+				WithRowAlignment(tw.AlignLeft).
+				WithTrimSpace(tw.On).
+				Build()),
+			tablewriter.WithRendition(tw.Rendition{
+				Symbols: tw.NewSymbols(tw.StyleNone),
+				Borders: tw.BorderNone,
+				Settings: tw.Settings{
+					Separators: tw.Separators{
+						BetweenRows: tw.On,
+					},
+				},
+			}),
+		)
+		table.Header("SETTING", "VALUE")
+		table.Bulk(data)
 		table.Render()
 		return nil
 	},
