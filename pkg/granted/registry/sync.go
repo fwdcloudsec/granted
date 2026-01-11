@@ -8,8 +8,8 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/granted/awsmerge"
-	"github.com/common-fate/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/urfave/cli/v2"
 )
 

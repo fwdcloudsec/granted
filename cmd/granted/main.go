@@ -10,8 +10,8 @@ import (
 
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/clierr"
-	"github.com/common-fate/granted/pkg/assume"
-	"github.com/common-fate/granted/pkg/granted"
+	"github.com/fwdcloudsec/granted/pkg/assume"
+	"github.com/fwdcloudsec/granted/pkg/granted"
 	"github.com/urfave/cli/v2"
 )
 

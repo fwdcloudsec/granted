@@ -14,7 +14,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/common-fate/granted/internal/build"
+	"github.com/fwdcloudsec/granted/internal/build"
 )
 
 type BrowserLaunchTemplate struct {

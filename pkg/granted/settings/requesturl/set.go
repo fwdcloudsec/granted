@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/AlecAivazis/survey/v2"
-	grantedConfig "github.com/common-fate/granted/pkg/config"
+	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )

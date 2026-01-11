@@ -3,7 +3,7 @@ package registry
 import (
 	"testing"
 
-	"github.com/common-fate/granted/pkg/granted/registry/gitregistry"
+	"github.com/fwdcloudsec/granted/pkg/granted/registry/gitregistry"
 	"github.com/stretchr/testify/assert"
 )
 

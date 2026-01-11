@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/securestorage"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"github.com/hashicorp/go-version"
 	"gopkg.in/ini.v1"
 )

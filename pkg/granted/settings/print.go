@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/common-fate/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fatih/structs"
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v2"

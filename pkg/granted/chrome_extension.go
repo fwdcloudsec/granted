@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/common-fate/granted/internal/build"
-	"github.com/common-fate/granted/pkg/chromemsg"
-	"github.com/common-fate/granted/pkg/securestorage"
+	"github.com/fwdcloudsec/granted/internal/build"
+	"github.com/fwdcloudsec/granted/pkg/chromemsg"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"github.com/urfave/cli/v2"
 )
 

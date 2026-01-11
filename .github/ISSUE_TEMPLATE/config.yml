@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Features, Bug Reports, Questions
-    url: https://github.com/common-fate/granted/discussions/new/choose
+    url: https://github.com/fwdcloudsec/granted/discussions/new/choose
     about: Our preferred starting point if you have any questions or suggestions about configuration, features or behavior.

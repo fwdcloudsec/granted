@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/granted/registry"
+	"github.com/fwdcloudsec/granted/pkg/granted/registry"
 )
 
 func runSync(ctx context.Context, rc RegistrySyncConfig, interactive bool) error {

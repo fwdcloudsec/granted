@@ -9,9 +9,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/cfaws"
-	"github.com/common-fate/granted/pkg/config"
-	"github.com/common-fate/granted/pkg/securestorage"
+	"github.com/fwdcloudsec/granted/pkg/cfaws"
+	"github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"github.com/urfave/cli/v2"
 )
 

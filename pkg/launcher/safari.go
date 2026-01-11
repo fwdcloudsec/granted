@@ -1,6 +1,6 @@
 package launcher
 
-import "github.com/common-fate/granted/pkg/browser"
+import "github.com/fwdcloudsec/granted/pkg/browser"
 
 // Open calls the 'open' command to open a URL.
 // This is the same command as when you run 'open -a Safari https://commonfate.io'

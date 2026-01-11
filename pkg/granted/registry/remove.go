@@ -3,10 +3,10 @@ package registry
 import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
-	grantedConfig "github.com/common-fate/granted/pkg/config"
-	"github.com/common-fate/granted/pkg/granted/awsmerge"
-	"github.com/common-fate/granted/pkg/granted/registry/gitregistry"
-	"github.com/common-fate/granted/pkg/testable"
+	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
+	"github.com/fwdcloudsec/granted/pkg/granted/registry/gitregistry"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/urfave/cli/v2"
 )
 

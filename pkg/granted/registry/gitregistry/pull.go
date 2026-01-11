@@ -3,7 +3,7 @@ package gitregistry
 import (
 	"os"
 
-	"github.com/common-fate/granted/pkg/git"
+	"github.com/fwdcloudsec/granted/pkg/git"
 )
 
 // pull ensures the remote git repo is cloned and the latest changes are pulled.

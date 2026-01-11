@@ -3,7 +3,7 @@ package settings
 import (
 	"github.com/urfave/cli/v2"
 
-	"github.com/common-fate/granted/pkg/granted/settings/requesturl"
+	"github.com/fwdcloudsec/granted/pkg/granted/settings/requesturl"
 )
 
 var SettingsCommand = cli.Command{

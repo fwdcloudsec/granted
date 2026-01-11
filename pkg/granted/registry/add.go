@@ -6,10 +6,10 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
-	grantedConfig "github.com/common-fate/granted/pkg/config"
-	"github.com/common-fate/granted/pkg/granted/awsmerge"
-	"github.com/common-fate/granted/pkg/granted/registry/gitregistry"
-	"github.com/common-fate/granted/pkg/testable"
+	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
+	"github.com/fwdcloudsec/granted/pkg/granted/registry/gitregistry"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 
 	"github.com/urfave/cli/v2"
 )
@@ -46,7 +46,7 @@ var AddCommand = cli.Command{
 		}
 
 		if c.Bool("write-on-sync-failure") {
-			return errors.New("'--write-on-sync-failure' has been deprecated. Please raise an issue if this has affected your workflows: https://github.com/common-fate/granted/issues/new")
+			return errors.New("'--write-on-sync-failure' has been deprecated. Please raise an issue if this has affected your workflows: https://github.com/fwdcloudsec/granted/issues/new")
 		}
 
 		name := c.String("name")
@@ -61,7 +61,7 @@ var AddCommand = cli.Command{
 		registryType := c.String("type")
 
 		if registryType == "http" {
-			return fmt.Errorf("HTTP registries are not longer supported in this version of Granted: if you are impacted by this please raise an issue: https://github.com/common-fate/granted/issues/new")
+			return fmt.Errorf("HTTP registries are not longer supported in this version of Granted: if you are impacted by this please raise an issue: https://github.com/fwdcloudsec/granted/issues/new")
 		}
 
 		if registryType != "git" {

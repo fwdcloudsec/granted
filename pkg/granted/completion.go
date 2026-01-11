@@ -11,10 +11,10 @@ import (
 	"path"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/internal/build"
-	"github.com/common-fate/granted/pkg/assume"
-	"github.com/common-fate/granted/pkg/config"
-	"github.com/common-fate/granted/pkg/shells"
+	"github.com/fwdcloudsec/granted/internal/build"
+	"github.com/fwdcloudsec/granted/pkg/assume"
+	"github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/shells"
 	"github.com/urfave/cli/v2"
 )
 

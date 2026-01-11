@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/cfaws"
-	grantedConfig "github.com/common-fate/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/cfaws"
+	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"gopkg.in/ini.v1"
 )
 

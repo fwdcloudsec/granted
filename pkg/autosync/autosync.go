@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/granted/registry"
+	"github.com/fwdcloudsec/granted/pkg/granted/registry"
 )
 
 // interactive when false will fail the profile registry sync

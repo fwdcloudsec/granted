@@ -8,7 +8,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/securestorage"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"github.com/urfave/cli/v2"
 )
 
