@@ -49,10 +49,22 @@ func (cpa *CredentialProcessAssumer) AssumeTerminal(ctx context.Context, c *Prof
 				}
 				if p.AWSConfig.MFASerial != "" {
 					aro.SerialNumber = &p.AWSConfig.MFASerial
-					aro.TokenProvider = MfaTokenProvider
+					if configOpts.MFATokenCode != "" {
+						aro.TokenProvider = func() (string, error) {
+							return configOpts.MFATokenCode, nil
+						}
+					} else {
+						aro.TokenProvider = MfaTokenProvider
+					}
 				} else if c.AWSConfig.MFASerial != "" {
 					aro.SerialNumber = &c.AWSConfig.MFASerial
-					aro.TokenProvider = MfaTokenProvider
+					if configOpts.MFATokenCode != "" {
+						aro.TokenProvider = func() (string, error) {
+							return configOpts.MFATokenCode, nil
+						}
+					} else {
+						aro.TokenProvider = MfaTokenProvider
+					}
 				}
 				aro.Duration = configOpts.Duration
 			})
@@ -69,7 +81,13 @@ func (cpa *CredentialProcessAssumer) AssumeTerminal(ctx context.Context, c *Prof
 			aro.RoleSessionName = getRoleSessionNameFromProfile(c)
 			if c.AWSConfig.MFASerial != "" {
 				aro.SerialNumber = &c.AWSConfig.MFASerial
-				aro.TokenProvider = MfaTokenProvider
+				if configOpts.MFATokenCode != "" {
+					aro.TokenProvider = func() (string, error) {
+						return configOpts.MFATokenCode, nil
+					}
+				} else {
+					aro.TokenProvider = MfaTokenProvider
+				}
 			}
 			aro.Duration = configOpts.Duration
 			if c.AWSConfig.ExternalID != "" {
