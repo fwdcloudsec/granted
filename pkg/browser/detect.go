@@ -288,7 +288,7 @@ func ConfigureBrowserSelection(browserName string, path string) error {
 }
 
 func GrantedIntroduction() {
-	clio.Info("To change the web browser that Granted uses run: `granted browser -set`")
+	clio.Info("To change the web browser that Granted uses run: `granted browser set`")
 	clio.NewLine()
 	clio.Info("Here's how to use Granted to supercharge your cloud access:")
 	clio.Info("`assume`                   - search profiles to assume")
