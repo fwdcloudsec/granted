@@ -6,7 +6,7 @@ package chromemsg
 import (
 	"path/filepath"
 
-	"github.com/common-fate/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/config"
 	"golang.org/x/sys/windows/registry"
 )
 

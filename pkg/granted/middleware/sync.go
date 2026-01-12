@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/common-fate/granted/pkg/autosync"
+	"github.com/fwdcloudsec/granted/pkg/autosync"
 	"github.com/urfave/cli/v2"
 )
 

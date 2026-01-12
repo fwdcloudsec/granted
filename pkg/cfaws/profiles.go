@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/ssocreds"
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/internal/build"
+	"github.com/fwdcloudsec/granted/internal/build"
 	"gopkg.in/ini.v1"
 )
 

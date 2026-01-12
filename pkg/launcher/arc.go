@@ -1,6 +1,6 @@
 package launcher
 
-import "github.com/common-fate/granted/pkg/browser"
+import "github.com/fwdcloudsec/granted/pkg/browser"
 
 type Arc struct {
 }

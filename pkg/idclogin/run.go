@@ -11,10 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/clierr"
-	grantedConfig "github.com/common-fate/granted/pkg/config"
-	"github.com/common-fate/granted/pkg/forkprocess"
-	"github.com/common-fate/granted/pkg/launcher"
-	"github.com/common-fate/granted/pkg/securestorage"
+	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/forkprocess"
+	"github.com/fwdcloudsec/granted/pkg/launcher"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"github.com/pkg/browser"
 )
 

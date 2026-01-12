@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/common-fate/granted/pkg/cfaws"
-	cfflags "github.com/common-fate/granted/pkg/urfav_overrides"
+	"github.com/fwdcloudsec/granted/pkg/cfaws"
+	cfflags "github.com/fwdcloudsec/granted/pkg/urfav_overrides"
 	"github.com/urfave/cli/v2"
 )
 

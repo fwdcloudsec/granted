@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/common-fate/granted/pkg/securestorage"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 )
 
 type SSOPlainTextOut struct {

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/common-fate/granted/internal/build"
+	"github.com/fwdcloudsec/granted/internal/build"
 )
 
 type HostManifest struct {

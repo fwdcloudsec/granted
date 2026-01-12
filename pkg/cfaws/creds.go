@@ -12,9 +12,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/config"
-	"github.com/common-fate/granted/pkg/securestorage"
-	"github.com/common-fate/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 )
 
 func TypeCredsToAwsCreds(c types.Credentials) aws.Credentials {

@@ -21,15 +21,15 @@ import (
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/ansi"
 	"github.com/common-fate/clio/clierr"
-	"github.com/common-fate/granted/pkg/assumeprint"
-	"github.com/common-fate/granted/pkg/browser"
-	"github.com/common-fate/granted/pkg/cfaws"
-	"github.com/common-fate/granted/pkg/config"
-	"github.com/common-fate/granted/pkg/console"
-	"github.com/common-fate/granted/pkg/forkprocess"
-	"github.com/common-fate/granted/pkg/launcher"
-	"github.com/common-fate/granted/pkg/testable"
-	cfflags "github.com/common-fate/granted/pkg/urfav_overrides"
+	"github.com/fwdcloudsec/granted/pkg/assumeprint"
+	"github.com/fwdcloudsec/granted/pkg/browser"
+	"github.com/fwdcloudsec/granted/pkg/cfaws"
+	"github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/console"
+	"github.com/fwdcloudsec/granted/pkg/forkprocess"
+	"github.com/fwdcloudsec/granted/pkg/launcher"
+	"github.com/fwdcloudsec/granted/pkg/testable"
+	cfflags "github.com/fwdcloudsec/granted/pkg/urfav_overrides"
 	"github.com/fatih/color"
 	"github.com/hako/durafmt"
 	"github.com/urfave/cli/v2"
@@ -102,7 +102,7 @@ func AssumeCommand(c *cli.Context) error {
 
 	if assumeFlags.String("exec") != "" && runtime.GOOS == "windows" {
 		return clierr.New("--exec flag is not currently supported on Windows",
-			clierr.Info("Let us know if you'd like support for this by creating an issue on our Github repo: https://github.com/common-fate/granted/issues/new"),
+			clierr.Info("Let us know if you'd like support for this by creating an issue on our Github repo: https://github.com/fwdcloudsec/granted/issues/new"),
 		)
 	}
 

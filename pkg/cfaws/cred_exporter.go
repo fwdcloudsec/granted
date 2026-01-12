@@ -6,8 +6,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/common-fate/clio"
-	gconfig "github.com/common-fate/granted/pkg/config"
-	"github.com/common-fate/granted/pkg/securestorage"
+	gconfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"gopkg.in/ini.v1"
 )
 

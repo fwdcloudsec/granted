@@ -13,11 +13,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/assume"
-	"github.com/common-fate/granted/pkg/browser"
-	"github.com/common-fate/granted/pkg/cfaws"
-	grantedConfig "github.com/common-fate/granted/pkg/config"
-	"github.com/common-fate/granted/pkg/securestorage"
+	"github.com/fwdcloudsec/granted/pkg/assume"
+	"github.com/fwdcloudsec/granted/pkg/browser"
+	"github.com/fwdcloudsec/granted/pkg/cfaws"
+	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"github.com/urfave/cli/v2"
 )
 

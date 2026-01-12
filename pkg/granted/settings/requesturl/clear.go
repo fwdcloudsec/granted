@@ -3,7 +3,7 @@ package requesturl
 import (
 	"fmt"
 
-	grantedConfig "github.com/common-fate/granted/pkg/config"
+	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )

@@ -15,10 +15,10 @@ import (
 	"gopkg.in/ini.v1"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/internal/build"
-	"github.com/common-fate/granted/pkg/cfaws"
-	"github.com/common-fate/granted/pkg/securestorage"
-	"github.com/common-fate/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/internal/build"
+	"github.com/fwdcloudsec/granted/pkg/cfaws"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/urfave/cli/v2"
 )
 

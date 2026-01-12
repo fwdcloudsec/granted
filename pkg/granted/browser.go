@@ -2,8 +2,8 @@ package granted
 
 import (
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/browser"
-	"github.com/common-fate/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/browser"
+	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/urfave/cli/v2"
 )
 

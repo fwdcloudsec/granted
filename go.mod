@@ -1,8 +1,6 @@
-module github.com/common-fate/granted
+module github.com/fwdcloudsec/granted
 
-go 1.23.0
-
-toolchain go1.24.2
+go 1.25.5
 
 require (
 	github.com/99designs/keyring v1.2.2

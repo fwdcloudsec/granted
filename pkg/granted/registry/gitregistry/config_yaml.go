@@ -8,7 +8,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
-	grantedConfig "github.com/common-fate/granted/pkg/config"
+	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"gopkg.in/yaml.v3"
 )
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/common-fate/granted/pkg/cfaws"
+	"github.com/fwdcloudsec/granted/pkg/cfaws"
 )
 
 type opts struct {

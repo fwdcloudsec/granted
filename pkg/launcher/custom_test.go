@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/common-fate/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/config"
 )
 
 func TestCustom_LaunchCommand(t *testing.T) {

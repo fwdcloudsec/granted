@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/cfaws"
-	"github.com/common-fate/granted/pkg/console"
+	"github.com/fwdcloudsec/granted/pkg/cfaws"
+	"github.com/fwdcloudsec/granted/pkg/console"
 	"github.com/urfave/cli/v2"
 )
 

@@ -8,7 +8,7 @@ import (
 	"github.com/99designs/keyring"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/pkg/errors"
 )
 

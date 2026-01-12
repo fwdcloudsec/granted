@@ -2,7 +2,7 @@ package cfaws
 
 import (
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/frecency"
+	"github.com/fwdcloudsec/granted/pkg/frecency"
 	"github.com/pkg/errors"
 )
 

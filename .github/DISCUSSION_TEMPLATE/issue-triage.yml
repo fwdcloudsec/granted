@@ -4,7 +4,7 @@ body:
     attributes:
       value: |
         > [!IMPORTANT]
-        > Please read through [the code of conduct](https://github.com/common-fate/granted/blob/main/CODE_OF_CONDUCT.md), and check for both existing [Discussions](https://github.com/common-fate/granted/discussions?discussions_q=) and [Issues](https://github.com/common-fate/granted/issues?q=sort%3Areactions-desc) prior to opening a new Discussion.
+        > Please read through [the code of conduct](https://github.com/fwdcloudsec/granted/blob/main/CODE_OF_CONDUCT.md), and check for both existing [Discussions](https://github.com/fwdcloudsec/granted/discussions?discussions_q=) and [Issues](https://github.com/fwdcloudsec/granted/issues?q=sort%3Areactions-desc) prior to opening a new Discussion.
   - type: markdown
     attributes:
       value: "# Issue Details"
@@ -113,7 +113,7 @@ body:
       value: |
         # User Acknowledgements
         > [!TIP]
-        > Use these links to review the existing Granted [Discussions](https://github.com/common-fate/granted/discussions?discussions_q=) and [Issues](https://github.com/common-fate/granted/issues?q=sort%3Areactions-desc).
+        > Use these links to review the existing Granted [Discussions](https://github.com/fwdcloudsec/granted/discussions?discussions_q=) and [Issues](https://github.com/fwdcloudsec/granted/issues?q=sort%3Areactions-desc).
   - type: checkboxes
     attributes:
       label: "I acknowledge that:"

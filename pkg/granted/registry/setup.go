@@ -7,7 +7,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/clierr"
-	"github.com/common-fate/granted/pkg/git"
+	"github.com/fwdcloudsec/granted/pkg/git"
 
 	"github.com/urfave/cli/v2"
 )

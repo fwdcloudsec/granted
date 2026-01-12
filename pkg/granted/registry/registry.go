@@ -4,8 +4,8 @@ import (
 	"context"
 	"sort"
 
-	grantedConfig "github.com/common-fate/granted/pkg/config"
-	"github.com/common-fate/granted/pkg/granted/registry/gitregistry"
+	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/granted/registry/gitregistry"
 	"gopkg.in/ini.v1"
 )
 

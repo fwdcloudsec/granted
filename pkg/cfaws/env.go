@@ -8,7 +8,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/joho/godotenv"
 )
 

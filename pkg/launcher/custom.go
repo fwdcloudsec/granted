@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/common-fate/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/config"
 )
 
 type TemplateData struct {

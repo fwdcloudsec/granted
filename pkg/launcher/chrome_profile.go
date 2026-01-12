@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/pkg/browser"
+	"github.com/fwdcloudsec/granted/pkg/browser"
 )
 
 type ChromeProfile struct {

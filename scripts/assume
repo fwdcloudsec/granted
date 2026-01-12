@@ -119,7 +119,7 @@ _is_assume_expired() {
   local curent_time expiry
   current_time="$(date -Iseconds)"
   expiry="$AWS_SESSION_EXPIRATION"
-  # shellcheck disable=SC3010,SC3054 # Only used by zsh
+  # shellcheck disable=SC3010,SC3012,SC3054 # Only used by zsh
   [[ "${current_time}" > "${expiry}" ]]
 }
 

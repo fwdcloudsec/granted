@@ -15,8 +15,8 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
-	"github.com/common-fate/granted/internal/build"
-	"github.com/common-fate/granted/pkg/shells"
+	"github.com/fwdcloudsec/granted/internal/build"
+	"github.com/fwdcloudsec/granted/pkg/shells"
 	"github.com/fatih/color"
 )
 
