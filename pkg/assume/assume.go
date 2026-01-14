@@ -93,6 +93,7 @@ func processArgsAndExecFlag(c *cli.Context, assumeFlags *cfflags.Flags) (string,
 }
 
 func AssumeCommand(c *cli.Context) error {
+
 	// assumeFlags allows flags to be passed on either side of the role argument.
 	// to access flags in this command, use assumeFlags.String("region") etc instead of c.String("region")
 	assumeFlags, err := cfflags.New("assumeFlags", GlobalFlags(), c)
@@ -362,8 +363,8 @@ func AssumeCommand(c *cli.Context) error {
 
 		var l Launcher
 		switch cfg.DefaultBrowser {
-		case browser.ChromeKey, browser.BraveKey, browser.EdgeKey, browser.ChromiumKey, browser.VivaldiKey:
-			l = launcher.ChromeProfile{
+		case browser.ChromeKey, browser.BraveKey, browser.EdgeKey, browser.ChromiumKey:
+			l = launcher.Chrome{
 				BrowserType:    cfg.DefaultBrowser,
 				ExecutablePath: browserPath,
 			}
@@ -403,6 +404,9 @@ func AssumeCommand(c *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("error building browser launch command: %w", err)
 		}
+
+		// add browser extra flags here to avoid modifying all interface methods (current and future ones)
+		args = append(args, cfg.CustomBrowserExtraFlags...)
 
 		var startErr error
 		if l.UseForkProcess() {
