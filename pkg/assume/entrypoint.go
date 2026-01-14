@@ -55,6 +55,7 @@ func GlobalFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "confirm", Aliases: []string{"y"}, Usage: "Skip confirmation prompts for access requests"},
 		&cli.BoolFlag{Name: "wait", Usage: "When using Granted with Common Fate the assume will halt while waiting for the access request to be approved."},
 		&cli.BoolFlag{Name: "no-cache", Usage: "Disables caching of session credentials and forces a refresh", EnvVars: []string{"GRANTED_NO_CACHE"}},
+		&cli.BoolFlag{Name: "refresh", Usage: "Forces Granted to refresh session credentials", EnvVars: []string{"GRANTED_REFRESH"}},
 		&cli.StringSliceFlag{Name: "browser-launch-template-arg", Usage: "Additional arguments to provide to the browser launch template command in key=value format, e.g. '--browser-launch-template-arg foo=bar"},
 		&cli.BoolFlag{Name: "skip-profile-registry-sync", Usage: "You can use this to skip the automated profile registry sync process."},
 		&cli.StringSliceFlag{Name: "attach", Usage: "Attach justifications to your request, such as a Jira ticket id or url `--attach=TP-123`"},
