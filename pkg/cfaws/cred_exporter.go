@@ -45,8 +45,8 @@ func ExportCredsToProfile(profileName string, creds aws.Credentials) error {
 		return err
 	}
 
-	if cfg.ExportCredentialSuffix != "" {
-		profileName = profileName + "-" + cfg.ExportCredentialSuffix
+	if cfg.ExportCredentialSuffix != nil && *cfg.ExportCredentialSuffix!= "" {
+		profileName = profileName + "-" + *cfg.ExportCredentialSuffix
 	}
 
 	credentialsFile.DeleteSection(profileName)
