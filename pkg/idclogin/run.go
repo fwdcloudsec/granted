@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -78,8 +79,10 @@ func Login(ctx context.Context, cfg aws.Config, startUrl string, scopes []string
 			return nil, err
 		}
 
+		// Determine the browser profile to use for SSO login
+		ssoBrowserProfile := os.Getenv("GRANTED_SSO_BROWSER_PROFILE")
 		// now build the actual command to run - e.g. 'firefox --new-tab <URL>'
-		args, err := l.LaunchCommand(url, "")
+		args, err := l.LaunchCommand(url, ssoBrowserProfile)
 		if err != nil {
 			return nil, fmt.Errorf("error building browser launch command: %w", err)
 		}
