@@ -20,7 +20,9 @@ var ExportSettingsCommand = cli.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Println(cfg.ExportCredentialSuffix)
+		if cfg.ExportCredentialSuffix != nil {
+			fmt.Println(*cfg.ExportCredentialSuffix)
+		}
 		return nil
 	},
 }
@@ -44,7 +46,7 @@ var SetExportSettingsCommand = cli.Command{
 			return err
 		}
 
-		cfg.ExportCredentialSuffix = selection
+		cfg.ExportCredentialSuffix = &selection
 		err = cfg.Save()
 		if err != nil {
 			return err

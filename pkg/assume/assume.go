@@ -464,12 +464,13 @@ func AssumeCommand(c *cli.Context) error {
 				return err
 			}
 			var profileName string
-			if cfg.ExportCredentialSuffix != "" {
-				profileName = profile.Name + "-" + cfg.ExportCredentialSuffix
-
+			if cfg.ExportCredentialSuffix == nil {
+				profileName = profile.Name
+				clio.Warn("No credential suffix found. This can cause issues with using exported credentials if conflicting profiles exist. Run `granted settings export-suffix set` to set one. Set to empty string to supress this warning")
+			} else if *cfg.ExportCredentialSuffix != "" {
+				profileName = profile.Name + "-" + *cfg.ExportCredentialSuffix
 			} else {
 				profileName = profile.Name
-				clio.Warn("No credential suffix found. This can cause issues with using exported credentials if conflicting profiles exist. Run `granted settings export-suffix set` to set one.")
 			}
 
 			credentialsFilePath := cfaws.GetAWSCredentialsPath()
