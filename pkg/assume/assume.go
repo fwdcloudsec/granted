@@ -280,10 +280,11 @@ func AssumeCommand(c *cli.Context) error {
 	}
 
 	configOpts := cfaws.ConfigOpts{
-		Duration:     time.Hour,
-		MFATokenCode: assumeFlags.String("mfa-token"),
-		Args:         assumeFlags.StringSlice("pass-through"),
-		DisableCache: assumeFlags.Bool("no-cache"),
+		Duration:          time.Hour,
+		MFATokenCode:      assumeFlags.String("mfa-token"),
+		Args:              assumeFlags.StringSlice("pass-through"),
+		DisableCache:      assumeFlags.Bool("no-cache"),
+		SSOBrowserProfile: assumeFlags.String("sso-browser-profile"),
 	}
 
 	// attempt to get session duration from profile
