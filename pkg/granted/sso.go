@@ -55,7 +55,9 @@ var GenerateCommand = cli.Command{
 		&cli.StringFlag{Name: "sso-region", Usage: "Specify the SSO region"},
 		&cli.StringSliceFlag{Name: "source", Usage: "The sources to load AWS profiles from (valid values are: 'aws-sso')", Value: cli.NewStringSlice("aws-sso")},
 		&cli.BoolFlag{Name: "no-credential-process", Usage: "Generate profiles without the Granted credential-process integration"},
-		&cli.StringFlag{Name: "profile-template", Usage: "Specify profile name template", Value: awsconfigfile.DefaultProfileNameTemplate}},
+		&cli.StringFlag{Name: "profile-template", Usage: "Specify profile name template", Value: awsconfigfile.DefaultProfileNameTemplate},
+		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
+	},
 	Action: func(c *cli.Context) error {
 		ctx := c.Context
 		fullCommand := fmt.Sprintf("%s %s", c.App.Name, c.Command.FullName()) // e.g. 'granted sso populate'
@@ -100,10 +102,11 @@ var GenerateCommand = cli.Command{
 			Prefix:              prefix,
 		}
 
+		ssoBrowserProfile := c.String("sso-browser-profile")
 		for _, s := range c.StringSlice("source") {
 			switch s {
 			case "aws-sso":
-				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL})
+				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOBrowserProfile: ssoBrowserProfile})
 			case "commonfate", "common-fate", "cf":
 				return fmt.Errorf("the common fate profile source is no longer supported: https://www.commonfate.io/blog/winding-down")
 			default:
@@ -138,6 +141,7 @@ var PopulateCommand = cli.Command{
 		&cli.BoolFlag{Name: "prune", Usage: "Remove any generated profiles with the 'common_fate_generated_from' key which no longer exist"},
 		&cli.StringFlag{Name: "profile-template", Usage: "Specify profile name template", Value: awsconfigfile.DefaultProfileNameTemplate},
 		&cli.BoolFlag{Name: "no-credential-process", Usage: "Generate profiles without the Granted credential-process integration"},
+		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
 	},
 	Action: func(c *cli.Context) error {
 		ctx := c.Context
@@ -214,10 +218,11 @@ var PopulateCommand = cli.Command{
 			PruneStartURLs:      pruneStartURLs,
 		}
 
+		ssoBrowserProfile := c.String("sso-browser-profile")
 		for _, s := range c.StringSlice("source") {
 			switch s {
 			case "aws-sso":
-				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOScopes: c.StringSlice("sso-scope")})
+				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOScopes: c.StringSlice("sso-scope"), SSOBrowserProfile: ssoBrowserProfile})
 			case "commonfate", "common-fate", "cf":
 				return fmt.Errorf("the common fate profile source is no longer supported: https://www.commonfate.io/blog/winding-down")
 			default:
@@ -245,6 +250,7 @@ var LoginCommand = cli.Command{
 		&cli.StringFlag{Name: "sso-region", Usage: "Specify the SSO region"},
 		&cli.StringFlag{Name: "sso-start-url", Usage: "Specify the SSO start url"},
 		&cli.StringSliceFlag{Name: "sso-scope", Usage: "Specify the SSO scopes"},
+		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
 	},
 	Action: func(c *cli.Context) error {
 		ctx := c.Context
@@ -291,13 +297,14 @@ var LoginCommand = cli.Command{
 		}
 
 		ssoScopes := c.StringSlice("sso-scope")
+		ssoBrowserProfile := c.String("sso-browser-profile")
 
 		cfg := aws.NewConfig()
 		cfg.Region = ssoRegion
 
 		secureSSOTokenStorage := securestorage.NewSecureSSOTokenStorage()
 
-		newSSOToken, err := idclogin.Login(ctx, *cfg, ssoStartUrl, ssoScopes)
+		newSSOToken, err := idclogin.Login(ctx, *cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
 		if err != nil {
 			return err
 		}
@@ -311,9 +318,10 @@ var LoginCommand = cli.Command{
 }
 
 type AWSSSOSource struct {
-	SSORegion string
-	StartURL  string
-	SSOScopes []string
+	SSORegion         string
+	StartURL          string
+	SSOScopes         []string
+	SSOBrowserProfile string
 }
 
 func (s AWSSSOSource) GetProfiles(ctx context.Context) ([]awsconfigfile.SSOProfile, error) {
@@ -348,7 +356,7 @@ func (s AWSSSOSource) GetProfiles(ctx context.Context) ([]awsconfigfile.SSOProfi
 
 	if ssoTokenFromSecureCache == nil && ssoTokenFromPlainText == nil {
 		// otherwise, login with SSO
-		ssoTokenFromSecureCache, err = idclogin.Login(ctx, cfg, s.StartURL, s.SSOScopes)
+		ssoTokenFromSecureCache, err = idclogin.Login(ctx, cfg, s.StartURL, s.SSOScopes, s.SSOBrowserProfile)
 		if err != nil {
 			return nil, err
 		}
