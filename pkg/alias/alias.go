@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -41,6 +42,36 @@ const devFishAlias = `alias dassume="source /usr/local/bin/dassume.fish"`
 const devTcshAlias = `alias dassume 'source /usr/local/bin/dassume.tcsh'`
 const devDefaultAlias = `alias dassume=". dassume"`
 
+// getNixSharePath returns the path to the Nix share directory if granted
+// is installed via Nix, otherwise returns an empty string.
+// Nix installs assume.fish to <store-path>/share/assume.fish rather than
+// <store-path>/bin/assume.fish
+func getNixSharePath() string {
+	execPath, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+
+	// Resolve symlinks to get the real path
+	realPath, err := filepath.EvalSymlinks(execPath)
+	if err != nil {
+		return ""
+	}
+
+	// Check if we're in a Nix store path (e.g., /nix/store/xxx-granted-x.x.x/bin/granted)
+	if !strings.HasPrefix(realPath, "/nix/store/") {
+		return ""
+	}
+
+	// The Nix package structure is: /nix/store/<hash>-granted-<version>/bin/granted
+	// We need: /nix/store/<hash>-granted-<version>/share/
+	binDir := filepath.Dir(realPath)
+	storeDir := filepath.Dir(binDir)
+	shareDir := filepath.Join(storeDir, "share")
+
+	return shareDir
+}
+
 func GetDefaultAlias() string {
 	if build.IsDev() {
 		return devDefaultAlias
@@ -50,6 +81,11 @@ func GetDefaultAlias() string {
 func GetFishAlias() string {
 	if build.IsDev() {
 		return devFishAlias
+	}
+
+	// Check if we're installed via Nix - Nix puts assume.fish in share/ not bin/
+	if nixShare := getNixSharePath(); nixShare != "" {
+		return fmt.Sprintf(`alias assume="source %s/assume.fish"`, nixShare)
 	}
 
 	// if 'brew' exists on the path, use the brew prefix rather than /usr/local/bin when installing the alias.
@@ -63,6 +99,11 @@ func GetFishAlias() string {
 func GetTcshAlias() string {
 	if build.IsDev() {
 		return devTcshAlias
+	}
+
+	// Check if we're installed via Nix - Nix puts assume.tcsh in share/ not bin/
+	if nixShare := getNixSharePath(); nixShare != "" {
+		return fmt.Sprintf(`alias assume 'source %s/assume.tcsh'`, nixShare)
 	}
 
 	// if 'brew' exists on the path, use the brew prefix rather than /usr/local/bin when installing the alias.
