@@ -8,7 +8,7 @@ The development instructions below pertain to Unix-based systems like Linux and 
 
 In order to develop Granted you'll need the following:
 
-- [Go 1.22](https://go.dev/doc/install)
+- [Go 1.25](https://go.dev/doc/install)
 
 ## Getting started
 
