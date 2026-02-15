@@ -192,7 +192,7 @@ func (c *Profile) SSOLogin(ctx context.Context, configOpts ConfigOpts) (aws.Cred
 	if cachedToken == nil && plainTextToken == nil {
 		newCfg := aws.NewConfig()
 		newCfg.Region = rootProfile.SSORegion()
-		newSSOToken, err := idclogin.Login(ctx, *newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes())
+		newSSOToken, err := idclogin.Login(ctx, *newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes(), configOpts.SSOBrowserProfile)
 		if err != nil {
 			return aws.Credentials{}, err
 		}
