@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -95,6 +96,8 @@ func Login(ctx context.Context, cfg aws.Config, startUrl string, scopes []string
 		} else {
 			clio.Debugf("running command without forkprocess: %s", args)
 			cmd := exec.Command(args[0], args[1:]...)
+			cmd.Stdout = os.Stderr
+			cmd.Stderr = os.Stderr
 			startErr = cmd.Start()
 		}
 
@@ -108,6 +111,8 @@ func Login(ctx context.Context, cfg aws.Config, startUrl string, scopes []string
 
 	} else if config.CustomSSOBrowserPath != "" {
 		cmd := exec.Command(config.CustomSSOBrowserPath, url)
+		cmd.Stdout = os.Stderr
+		cmd.Stderr = os.Stderr
 		err = cmd.Start()
 		if err != nil {
 			// fail silently
