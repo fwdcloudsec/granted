@@ -29,11 +29,16 @@ func (aia *AwsIamAssumer) AssumeTerminal(ctx context.Context, c *Profile, config
 	sessionCredStorage := securestorage.NewSecureSessionCredentialStorage()
 
 	cachedCreds, err := sessionCredStorage.GetCredentials(c.AWSConfig.Profile)
-	if err != nil {
+	switch {
+	case err != nil:
 		clio.Debugw("error loading cached credentials", "error", err)
-	} else if cachedCreds != nil && !cachedCreds.Expired() {
-		clio.Debugw("credentials found in cache", "expires", cachedCreds.Expires.String(), "canExpire", cachedCreds.CanExpire, "timeNow", time.Now().String())
-		return *cachedCreds, err
+	case cachedCreds != nil:
+		if !cachedCreds.Expired() {
+			clio.Debug("credentials found in cache", "expires", cachedCreds.Expires.String(), "canExpire", cachedCreds.CanExpire, "timeNow", time.Now().String(), "refresh", configOpts.Refresh)
+			if !configOpts.Refresh {
+				return *cachedCreds, err
+			}
+		}
 	}
 
 	clio.Debugw("refreshing credentials", "reason", "not found")
