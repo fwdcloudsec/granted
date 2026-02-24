@@ -245,6 +245,7 @@ var LoginCommand = cli.Command{
 		&cli.StringFlag{Name: "sso-region", Usage: "Specify the SSO region"},
 		&cli.StringFlag{Name: "sso-start-url", Usage: "Specify the SSO start url"},
 		&cli.StringSliceFlag{Name: "sso-scope", Usage: "Specify the SSO scopes"},
+		&cli.BoolFlag{Name: "use-device-code", Usage: "Use device code flow instead of authorization code with PKCE"},
 	},
 	Action: func(c *cli.Context) error {
 		ctx := c.Context
@@ -297,7 +298,15 @@ var LoginCommand = cli.Command{
 
 		secureSSOTokenStorage := securestorage.NewSecureSSOTokenStorage()
 
-		newSSOToken, err := idclogin.Login(ctx, *cfg, ssoStartUrl, ssoScopes)
+		var newSSOToken *securestorage.SSOToken
+		var err error
+
+		useDeviceCode := c.Bool("use-device-code") || idclogin.IsHeadlessEnvironment()
+		if useDeviceCode {
+			newSSOToken, err = idclogin.Login(ctx, *cfg, ssoStartUrl, ssoScopes)
+		} else {
+			newSSOToken, err = idclogin.LoginWithAuthorizationCode(ctx, *cfg, ssoStartUrl, ssoScopes)
+		}
 		if err != nil {
 			return err
 		}
@@ -347,8 +356,12 @@ func (s AWSSSOSource) GetProfiles(ctx context.Context) ([]awsconfigfile.SSOProfi
 	}
 
 	if ssoTokenFromSecureCache == nil && ssoTokenFromPlainText == nil {
-		// otherwise, login with SSO
-		ssoTokenFromSecureCache, err = idclogin.Login(ctx, cfg, s.StartURL, s.SSOScopes)
+		// Login with SSO, using authorization code flow by default unless headless
+		if idclogin.IsHeadlessEnvironment() {
+			ssoTokenFromSecureCache, err = idclogin.Login(ctx, cfg, s.StartURL, s.SSOScopes)
+		} else {
+			ssoTokenFromSecureCache, err = idclogin.LoginWithAuthorizationCode(ctx, cfg, s.StartURL, s.SSOScopes)
+		}
 		if err != nil {
 			return nil, err
 		}
