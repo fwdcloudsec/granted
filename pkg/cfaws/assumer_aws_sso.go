@@ -192,7 +192,19 @@ func (c *Profile) SSOLogin(ctx context.Context, configOpts ConfigOpts) (aws.Cred
 	if cachedToken == nil && plainTextToken == nil {
 		newCfg := aws.NewConfig()
 		newCfg.Region = rootProfile.SSORegion()
-		newSSOToken, err := idclogin.Login(ctx, *newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes())
+
+		var newSSOToken *securestorage.SSOToken
+		var err error
+
+		// Use authorization code flow with PKCE when an sso_session is configured,
+		// unless the user has explicitly requested device code flow or we're
+		// in a headless environment where the localhost redirect won't work.
+		useDeviceCode := configOpts.UseDeviceCode || idclogin.IsHeadlessEnvironment()
+		if c.AWSConfig.SSOSessionName != "" && !useDeviceCode {
+			newSSOToken, err = idclogin.LoginWithAuthorizationCode(ctx, *newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes())
+		} else {
+			newSSOToken, err = idclogin.Login(ctx, *newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes())
+		}
 		if err != nil {
 			return aws.Credentials{}, err
 		}
