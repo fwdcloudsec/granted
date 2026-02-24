@@ -28,6 +28,7 @@ type ConfigOpts struct {
 	MFATokenCode               string
 	DisableCache               bool
 	SSOBrowserProfile          string
+	UseDeviceCode              bool
 }
 
 type Profile struct {

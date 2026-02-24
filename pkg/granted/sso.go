@@ -251,6 +251,7 @@ var LoginCommand = cli.Command{
 		&cli.StringFlag{Name: "sso-start-url", Usage: "Specify the SSO start url"},
 		&cli.StringSliceFlag{Name: "sso-scope", Usage: "Specify the SSO scopes"},
 		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
+		&cli.BoolFlag{Name: "use-device-code", Usage: "Use device code flow instead of authorization code with PKCE"},
 	},
 	Action: func(c *cli.Context) error {
 		ctx := c.Context
@@ -304,7 +305,15 @@ var LoginCommand = cli.Command{
 
 		secureSSOTokenStorage := securestorage.NewSecureSSOTokenStorage()
 
-		newSSOToken, err := idclogin.Login(ctx, *cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
+		var newSSOToken *securestorage.SSOToken
+		var err error
+
+		useDeviceCode := c.Bool("use-device-code") || idclogin.IsHeadlessEnvironment()
+		if useDeviceCode {
+			newSSOToken, err = idclogin.Login(ctx, *cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
+		} else {
+			newSSOToken, err = idclogin.LoginWithAuthorizationCode(ctx, *cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
+		}
 		if err != nil {
 			return err
 		}
@@ -355,8 +364,12 @@ func (s AWSSSOSource) GetProfiles(ctx context.Context) ([]awsconfigfile.SSOProfi
 	}
 
 	if ssoTokenFromSecureCache == nil && ssoTokenFromPlainText == nil {
-		// otherwise, login with SSO
-		ssoTokenFromSecureCache, err = idclogin.Login(ctx, cfg, s.StartURL, s.SSOScopes, s.SSOBrowserProfile)
+		// Login with SSO, using authorization code flow by default unless headless
+		if idclogin.IsHeadlessEnvironment() {
+			ssoTokenFromSecureCache, err = idclogin.Login(ctx, cfg, s.StartURL, s.SSOScopes, s.SSOBrowserProfile)
+		} else {
+			ssoTokenFromSecureCache, err = idclogin.LoginWithAuthorizationCode(ctx, cfg, s.StartURL, s.SSOScopes, s.SSOBrowserProfile)
+		}
 		if err != nil {
 			return nil, err
 		}
