@@ -571,7 +571,16 @@ var RotateCredentialsCommand = cli.Command{
 
 		iamClient := iam.NewFromConfig(cfg)
 
-		res, err := iamClient.CreateAccessKey(c.Context, &iam.CreateAccessKeyInput{})
+		// Retrieve the current IAM user's name to pass explicitly to IAM API calls.
+		// When UserName is omitted, AWS may incorrectly evaluate the resource ARN
+		// with a "null" prefix on the username, causing policy denials.
+		getUserRes, err := iamClient.GetUser(c.Context, &iam.GetUserInput{})
+		if err != nil {
+			return err
+		}
+		userName := getUserRes.User.UserName
+
+		res, err := iamClient.CreateAccessKey(c.Context, &iam.CreateAccessKeyInput{UserName: userName})
 		if err != nil {
 			return err
 		}
@@ -581,13 +590,13 @@ var RotateCredentialsCommand = cli.Command{
 			return err
 		}
 
-		_, err = iamClient.UpdateAccessKey(c.Context, &iam.UpdateAccessKeyInput{AccessKeyId: &t.AccessKeyID, Status: "Inactive"})
+		_, err = iamClient.UpdateAccessKey(c.Context, &iam.UpdateAccessKeyInput{AccessKeyId: &t.AccessKeyID, Status: "Inactive", UserName: userName})
 		if err != nil {
 			return err
 		}
 
 		if c.Bool("delete") {
-			_, err = iamClient.DeleteAccessKey(c.Context, &iam.DeleteAccessKeyInput{AccessKeyId: &t.AccessKeyID})
+			_, err = iamClient.DeleteAccessKey(c.Context, &iam.DeleteAccessKeyInput{AccessKeyId: &t.AccessKeyID, UserName: userName})
 			if err != nil {
 				return err
 			}
