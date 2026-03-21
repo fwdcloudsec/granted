@@ -327,7 +327,7 @@ func (s AWSSSOSource) GetProfiles(ctx context.Context) ([]awsconfigfile.SSOProfi
 			// We've disabled the built-in AWS client rate limiting below because we're using uber's rate limit package to rate limit the AWS SSO API calls
 			// The issue is caused because all Go routines use the same token bucket and it runs out of tokens. Link to the solution: https://github.com/aws/aws-sdk-go-v2/issues/1665
 			so.RateLimiter = ratelimit.NewTokenRateLimit(100000)
-			so.MaxAttempts = 15
+			so.MaxAttempts = 50
 		})
 	}))
 	if err != nil {
