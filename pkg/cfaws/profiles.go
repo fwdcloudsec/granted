@@ -27,6 +27,7 @@ type ConfigOpts struct {
 	ShouldRetryAssuming        *bool
 	MFATokenCode               string
 	DisableCache               bool
+	SSOBrowserProfile          string
 }
 
 type Profile struct {

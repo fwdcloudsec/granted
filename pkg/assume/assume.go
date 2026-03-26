@@ -280,10 +280,11 @@ func AssumeCommand(c *cli.Context) error {
 	}
 
 	configOpts := cfaws.ConfigOpts{
-		Duration:     time.Hour,
-		MFATokenCode: assumeFlags.String("mfa-token"),
-		Args:         assumeFlags.StringSlice("pass-through"),
-		DisableCache: assumeFlags.Bool("no-cache"),
+		Duration:          time.Hour,
+		MFATokenCode:      assumeFlags.String("mfa-token"),
+		Args:              assumeFlags.StringSlice("pass-through"),
+		DisableCache:      assumeFlags.Bool("no-cache"),
+		SSOBrowserProfile: assumeFlags.String("sso-browser-profile"),
 	}
 
 	// attempt to get session duration from profile
@@ -307,7 +308,7 @@ func AssumeCommand(c *cli.Context) error {
 
 	// if getConsoleURL is true, we'll use the AWS federated login to retrieve a URL to access the console.
 	// depending on how Granted is configured, this is then printed to the terminal or a browser is launched at the URL automatically.
-	getConsoleURL := !assumeFlags.Bool("env") && ((assumeFlags.Bool("console") || assumeFlags.String("console-destination") != "") || assumeFlags.Bool("active-role") || assumeFlags.String("service") != "" || assumeFlags.Bool("url") || assumeFlags.String("browser-profile") != "")
+	getConsoleURL := !assumeFlags.Bool("env") && ((assumeFlags.Bool("console") || assumeFlags.String("console-destination") != "") || assumeFlags.Bool("active-role") || assumeFlags.String("service") != "" || assumeFlags.Bool("url"))
 
 	// this makes it easy for users to copy the actual command and avoid needing to lookup profiles
 	if !cfg.DisableUsageTips && showRerunCommand {

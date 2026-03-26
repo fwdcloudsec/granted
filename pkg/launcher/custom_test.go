@@ -36,6 +36,17 @@ func TestCustom_LaunchCommand(t *testing.T) {
 			want: []string{"/usr/bin/firefox", "--url", "https://commonfate.io", "--profile", "example"},
 		},
 		{
+			name: "empty_profile",
+			fields: fields{
+				Command: "/usr/bin/firefox --url {{.URL}} --profile {{.Profile}}",
+			},
+			args: args{
+				url:     "https://commonfate.io",
+				profile: "",
+			},
+			want: []string{"/usr/bin/firefox", "--url", "https://commonfate.io", "--profile", ""},
+		},
+		{
 			name: "with_args",
 			fields: fields{
 				Command: "{{.Args.Foo}}",

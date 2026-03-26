@@ -20,7 +20,7 @@ import (
 )
 
 // Login contains all the steps to complete a device code flow to retrieve an SSO token
-func Login(ctx context.Context, cfg aws.Config, startUrl string, scopes []string) (*securestorage.SSOToken, error) {
+func Login(ctx context.Context, cfg aws.Config, startUrl string, scopes []string, browserProfile string) (*securestorage.SSOToken, error) {
 	ssooidcClient := ssooidc.NewFromConfig(cfg)
 
 	// If scopes aren't provided, default to the legacy non-refreshable configuration
@@ -80,7 +80,7 @@ func Login(ctx context.Context, cfg aws.Config, startUrl string, scopes []string
 		}
 
 		// now build the actual command to run - e.g. 'firefox --new-tab <URL>'
-		args, err := l.LaunchCommand(url, "")
+		args, err := l.LaunchCommand(url, browserProfile)
 		if err != nil {
 			return nil, fmt.Errorf("error building browser launch command: %w", err)
 		}
