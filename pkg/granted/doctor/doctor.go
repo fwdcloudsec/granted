@@ -220,9 +220,14 @@ func (d *GrantedDoctor) CheckAllAWSKeychainTokens(ctx context.Context) error {
 func (d *GrantedDoctor) CheckValidCredentials(ctx context.Context, token cfaws.SSOPlainTextOut) error {
 	secureSSOTokenStorage := securestorage.NewSecureSSOTokenStorage()
 
+	gCfg, err := grantedConfig.Load()
+	if err != nil {
+		return err
+	}
+
 	cfg := aws.NewConfig()
 	cfg.Region = d.Profile.SSORegion()
-	creds, err := d.Profile.SSOLoginWithToken(ctx, cfg, &token.AccessToken, secureSSOTokenStorage, cfaws.ConfigOpts{})
+	creds, err := d.Profile.SSOLoginWithToken(ctx, cfg, &token.AccessToken, secureSSOTokenStorage, cfaws.ConfigOpts{UseAuthorizationCode: gCfg.UseAuthorizationCode})
 	if _, ok := err.(cfaws.NoAccessError); ok {
 		clio.Info("No access to current profile, skipping...\n")
 		return nil

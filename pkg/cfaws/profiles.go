@@ -29,6 +29,7 @@ type ConfigOpts struct {
 	DisableCache               bool
 	SSOBrowserProfile          string
 	UseDeviceCode              bool
+	UseAuthorizationCode       bool
 }
 
 type Profile struct {

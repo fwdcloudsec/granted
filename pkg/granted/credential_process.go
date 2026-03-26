@@ -90,7 +90,7 @@ var CredentialProcess = cli.Command{
 			duration = *profile.AWSConfig.RoleDurationSeconds
 		}
 
-		credentials, err := profile.AssumeTerminal(c.Context, cfaws.ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: autoLogin})
+		credentials, err := profile.AssumeTerminal(c.Context, cfaws.ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: autoLogin, UseAuthorizationCode: cfg.UseAuthorizationCode})
 		if err != nil {
 			return err
 		}

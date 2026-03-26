@@ -91,6 +91,14 @@ type Config struct {
 	// will cause Granted to hang during the login process.
 	CredentialProcessAutoLogin bool `toml:",omitempty"`
 
+	// UseAuthorizationCode, if 'true', will use the OAuth Authorization Code
+	// with PKCE flow for SSO login instead of the default device code flow.
+	//
+	// This provides a smoother login experience by skipping manual code entry,
+	// but requires a local browser that can redirect to 127.0.0.1.
+	// Do not set this to 'true' on headless systems.
+	UseAuthorizationCode bool `toml:",omitempty"`
+
 	SSO map[string]AWSSSOConfiguration `toml:",omitempty"`
 }
 
