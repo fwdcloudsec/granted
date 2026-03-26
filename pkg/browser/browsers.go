@@ -18,6 +18,7 @@ const (
 	StdoutKey            string = "STDOUT"
 	FirefoxStdoutKey     string = "FIREFOX_STDOUT"
 	ArcKey               string = "ARC"
+	ZenKey               string = "ZEN"
 	FirefoxDevEditionKey string = "FIREFOX_DEV"
 	FirefoxNightlyKey    string = "FIREFOX_NIGHTLY"
 	CustomKey            string = "CUSTOM"
@@ -64,6 +65,10 @@ var VivaldiPathWindows = []string{`\Program Files\Vivaldi\Application\vivaldi.ex
 var SafariPathMac = []string{"/Applications/Safari.app/Contents/MacOS/Safari"}
 
 var ArcPathMac = []string{"/Applications/Arc.app/Contents/MacOS/Arc"}
+
+var ZenPathMac = []string{"/Applications/Zen Browser.app/Contents/MacOS/zen"}
+var ZenPathLinux = []string{`/usr/bin/zen-browser`, `/opt/zen-browser/zen`}
+var ZenPathWindows = []string{`\Program Files\Zen Browser\zen.exe`}
 
 func ChromePathDefaults() ([]string, error) {
 	// check linuxpath for binary install
@@ -246,6 +251,23 @@ func ArcPathDefaults() ([]string, error) {
 	switch runtime.GOOS {
 	case "darwin":
 		return ArcPathMac, nil
+	default:
+		return nil, errors.New("os not supported")
+	}
+}
+
+func ZenPathDefaults() ([]string, error) {
+	path, err := exec.LookPath("zen-browser")
+	if err == nil {
+		return []string{path}, nil
+	}
+	switch runtime.GOOS {
+	case "windows":
+		return ZenPathWindows, nil
+	case "darwin":
+		return ZenPathMac, nil
+	case "linux":
+		return ZenPathLinux, nil
 	default:
 		return nil, errors.New("os not supported")
 	}

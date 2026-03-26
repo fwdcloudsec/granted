@@ -344,7 +344,7 @@ func AssumeCommand(c *cli.Context) error {
 			return err
 		}
 
-		if cfg.DefaultBrowser == browser.FirefoxKey || cfg.DefaultBrowser == browser.WaterfoxKey || cfg.DefaultBrowser == browser.FirefoxStdoutKey || cfg.DefaultBrowser == browser.FirefoxDevEditionKey || cfg.DefaultBrowser == browser.FirefoxNightlyKey {
+		if cfg.DefaultBrowser == browser.FirefoxKey || cfg.DefaultBrowser == browser.WaterfoxKey || cfg.DefaultBrowser == browser.FirefoxStdoutKey || cfg.DefaultBrowser == browser.FirefoxDevEditionKey || cfg.DefaultBrowser == browser.FirefoxNightlyKey || cfg.DefaultBrowser == browser.ZenKey {
 			// transform the URL into the Firefox Tab Container format.
 			consoleURL = fmt.Sprintf("ext+granted-containers:name=%s&url=%s&color=%s&icon=%s", containerProfile, url.QueryEscape(consoleURL), profile.CustomGrantedProperty("color"), profile.CustomGrantedProperty("icon"))
 		}
@@ -376,6 +376,10 @@ func AssumeCommand(c *cli.Context) error {
 			l = launcher.Safari{}
 		case browser.ArcKey:
 			l = launcher.Arc{}
+		case browser.ZenKey:
+			l = launcher.Zen{
+				ExecutablePath: browserPath,
+			}
 		case browser.FirefoxDevEditionKey:
 			l = launcher.FirefoxDevEdition{
 				ExecutablePath: browserPath,
