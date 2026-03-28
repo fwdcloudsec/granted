@@ -54,7 +54,7 @@ var ConsoleCommand = cli.Command{
 		if err != nil {
 			return err
 		}
-		if c.Bool("firefox") || cfg.DefaultBrowser == browser.FirefoxKey || cfg.DefaultBrowser == browser.FirefoxStdoutKey {
+		if c.Bool("firefox") || cfg.DefaultBrowser == browser.FirefoxKey || cfg.DefaultBrowser == browser.FirefoxStdoutKey || cfg.DefaultBrowser == browser.ZenKey {
 			// transform the URL into the Firefox Tab Container format.
 			consoleURL = fmt.Sprintf("ext+granted-containers:name=%s&url=%s&color=%s&icon=%s", c.String("container-name"), url.QueryEscape(consoleURL), c.String("color"), c.String("icon"))
 		}
@@ -95,6 +95,10 @@ var ConsoleCommand = cli.Command{
 				}
 			case browser.FirefoxKey:
 				l = launcher.Firefox{
+					ExecutablePath: cfg.CustomBrowserPath,
+				}
+			case browser.ZenKey:
+				l = launcher.Zen{
 					ExecutablePath: cfg.CustomBrowserPath,
 				}
 			case browser.SafariKey:

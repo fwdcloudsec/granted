@@ -50,7 +50,7 @@ func HandleManualBrowserSelection() (string, error) {
 	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 	in := survey.Select{
 		Message: "Select one of the browsers from the list",
-		Options: []string{"Chrome", "Brave", "Edge", "Vivaldi", "Firefox", "Waterfox", "Chromium", "Safari", "Stdout", "FirefoxStdout", "Firefox Developer Edition", "Firefox Nightly", "Arc", "Custom"},
+		Options: []string{"Chrome", "Brave", "Edge", "Vivaldi", "Firefox", "Waterfox", "Chromium", "Safari", "Stdout", "FirefoxStdout", "Firefox Developer Edition", "Firefox Nightly", "Arc", "Zen", "Custom"},
 	}
 	var selection string
 	clio.NewLine()
@@ -139,6 +139,9 @@ func GetBrowserKey(b string) string {
 	if strings.Contains(strings.ToLower(b), "arc") {
 		return ArcKey
 	}
+	if strings.Contains(strings.ToLower(b), "zen") {
+		return ZenKey
+	}
 	if strings.Contains(strings.ToLower(b), "custom") {
 		return CustomKey
 	}
@@ -169,6 +172,8 @@ func DetectInstallation(browserKey string) (string, bool) {
 		bPath, _ = SafariPathDefaults()
 	case ArcKey:
 		bPath, _ = ArcPathDefaults()
+	case ZenKey:
+		bPath, _ = ZenPathDefaults()
 	case FirefoxDevEditionKey:
 		bPath, _ = FirefoxDevPathDefaults()
 	case FirefoxNightlyKey:
@@ -261,7 +266,7 @@ func ConfigureBrowserSelection(browserName string, path string) error {
 			browserPath = customBrowserPath
 		}
 
-		if browserKey == FirefoxKey || browserKey == WaterfoxKey || browserKey == FirefoxDevEditionKey || browserKey == FirefoxNightlyKey {
+		if browserKey == FirefoxKey || browserKey == WaterfoxKey || browserKey == FirefoxDevEditionKey || browserKey == FirefoxNightlyKey || browserKey == ZenKey {
 			err := RunFirefoxExtensionPrompts(browserPath, browserName)
 			if err != nil {
 				return err
