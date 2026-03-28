@@ -82,7 +82,7 @@ func GetAWSCredentials(ctx context.Context) (*aws.Credentials, error) {
 		duration = *profile.AWSConfig.RoleDurationSeconds
 	}
 
-	credentials, err := profile.AssumeTerminal(ctx, ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: true})
+	credentials, err := profile.AssumeTerminal(ctx, ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: true, UseAuthorizationCode: cfg.UseAuthorizationCode})
 	if err != nil {
 		return nil, err
 	}

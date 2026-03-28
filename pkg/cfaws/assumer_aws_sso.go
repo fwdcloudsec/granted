@@ -192,7 +192,21 @@ func (c *Profile) SSOLogin(ctx context.Context, configOpts ConfigOpts) (aws.Cred
 	if cachedToken == nil && plainTextToken == nil {
 		newCfg := aws.NewConfig()
 		newCfg.Region = rootProfile.SSORegion()
-		newSSOToken, err := idclogin.Login(ctx, *newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes(), configOpts.SSOBrowserProfile)
+
+		var newSSOToken *securestorage.SSOToken
+		var err error
+
+		// Use device code by default. Authorization code with PKCE is used only
+		// when explicitly opted in via flag or config, and not in headless environments.
+		useDeviceCode := configOpts.UseDeviceCode || idclogin.IsHeadlessEnvironment()
+		if configOpts.UseAuthorizationCode && useDeviceCode && idclogin.IsHeadlessEnvironment() {
+			clio.Warn("Headless environment detected, falling back to device code flow instead of authorization code")
+		}
+		if configOpts.UseAuthorizationCode && !useDeviceCode {
+			newSSOToken, err = idclogin.LoginWithAuthorizationCode(ctx, *newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes(), configOpts.SSOBrowserProfile)
+		} else {
+			newSSOToken, err = idclogin.Login(ctx, *newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes(), configOpts.SSOBrowserProfile)
+		}
 		if err != nil {
 			return aws.Credentials{}, err
 		}

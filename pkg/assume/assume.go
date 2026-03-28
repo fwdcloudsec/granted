@@ -306,6 +306,8 @@ func AssumeCommand(c *cli.Context) error {
 		return err
 	}
 
+	configOpts.UseAuthorizationCode = assumeFlags.Bool("use-authorization-code") || cfg.UseAuthorizationCode
+
 	// if getConsoleURL is true, we'll use the AWS federated login to retrieve a URL to access the console.
 	// depending on how Granted is configured, this is then printed to the terminal or a browser is launched at the URL automatically.
 	getConsoleURL := !assumeFlags.Bool("env") && ((assumeFlags.Bool("console") || assumeFlags.String("console-destination") != "") || assumeFlags.Bool("active-role") || assumeFlags.String("service") != "" || assumeFlags.Bool("url"))

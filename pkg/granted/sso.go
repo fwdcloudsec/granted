@@ -57,6 +57,7 @@ var GenerateCommand = cli.Command{
 		&cli.BoolFlag{Name: "no-credential-process", Usage: "Generate profiles without the Granted credential-process integration"},
 		&cli.StringFlag{Name: "profile-template", Usage: "Specify profile name template", Value: awsconfigfile.DefaultProfileNameTemplate},
 		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
+		&cli.BoolFlag{Name: "use-device-code", Usage: "Force device code flow even if authorization code with PKCE is enabled"},
 	},
 	Action: func(c *cli.Context) error {
 		ctx := c.Context
@@ -106,7 +107,7 @@ var GenerateCommand = cli.Command{
 		for _, s := range c.StringSlice("source") {
 			switch s {
 			case "aws-sso":
-				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOBrowserProfile: ssoBrowserProfile})
+				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOBrowserProfile: ssoBrowserProfile, UseDeviceCode: c.Bool("use-device-code")})
 			case "commonfate", "common-fate", "cf":
 				return fmt.Errorf("the common fate profile source is no longer supported: https://www.commonfate.io/blog/winding-down")
 			default:
@@ -142,6 +143,7 @@ var PopulateCommand = cli.Command{
 		&cli.StringFlag{Name: "profile-template", Usage: "Specify profile name template", Value: awsconfigfile.DefaultProfileNameTemplate},
 		&cli.BoolFlag{Name: "no-credential-process", Usage: "Generate profiles without the Granted credential-process integration"},
 		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
+		&cli.BoolFlag{Name: "use-device-code", Usage: "Force device code flow even if authorization code with PKCE is enabled"},
 	},
 	Action: func(c *cli.Context) error {
 		ctx := c.Context
@@ -222,7 +224,7 @@ var PopulateCommand = cli.Command{
 		for _, s := range c.StringSlice("source") {
 			switch s {
 			case "aws-sso":
-				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOScopes: c.StringSlice("sso-scope"), SSOBrowserProfile: ssoBrowserProfile})
+				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOScopes: c.StringSlice("sso-scope"), SSOBrowserProfile: ssoBrowserProfile, UseDeviceCode: c.Bool("use-device-code")})
 			case "commonfate", "common-fate", "cf":
 				return fmt.Errorf("the common fate profile source is no longer supported: https://www.commonfate.io/blog/winding-down")
 			default:
@@ -251,6 +253,8 @@ var LoginCommand = cli.Command{
 		&cli.StringFlag{Name: "sso-start-url", Usage: "Specify the SSO start url"},
 		&cli.StringSliceFlag{Name: "sso-scope", Usage: "Specify the SSO scopes"},
 		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
+		&cli.BoolFlag{Name: "use-device-code", Usage: "Force device code flow even if authorization code with PKCE is enabled"},
+		&cli.BoolFlag{Name: "use-authorization-code", Usage: "Use authorization code flow with PKCE instead of device code"},
 	},
 	Action: func(c *cli.Context) error {
 		ctx := c.Context
@@ -299,12 +303,28 @@ var LoginCommand = cli.Command{
 		ssoScopes := c.StringSlice("sso-scope")
 		ssoBrowserProfile := c.String("sso-browser-profile")
 
+		grantedCfg, err := grantedconfig.Load()
+		if err != nil {
+			return err
+		}
+
 		cfg := aws.NewConfig()
 		cfg.Region = ssoRegion
 
 		secureSSOTokenStorage := securestorage.NewSecureSSOTokenStorage()
 
-		newSSOToken, err := idclogin.Login(ctx, *cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
+		var newSSOToken *securestorage.SSOToken
+
+		useAuthCode := c.Bool("use-authorization-code") || grantedCfg.UseAuthorizationCode
+		isHeadless := idclogin.IsHeadlessEnvironment()
+		if useAuthCode && isHeadless {
+			clio.Warn("Headless environment detected, falling back to device code flow instead of authorization code")
+		}
+		if useAuthCode && !isHeadless && !c.Bool("use-device-code") {
+			newSSOToken, err = idclogin.LoginWithAuthorizationCode(ctx, *cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
+		} else {
+			newSSOToken, err = idclogin.Login(ctx, *cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
+		}
 		if err != nil {
 			return err
 		}
@@ -322,6 +342,7 @@ type AWSSSOSource struct {
 	StartURL          string
 	SSOScopes         []string
 	SSOBrowserProfile string
+	UseDeviceCode     bool
 }
 
 func (s AWSSSOSource) GetProfiles(ctx context.Context) ([]awsconfigfile.SSOProfile, error) {
@@ -355,8 +376,22 @@ func (s AWSSSOSource) GetProfiles(ctx context.Context) ([]awsconfigfile.SSOProfi
 	}
 
 	if ssoTokenFromSecureCache == nil && ssoTokenFromPlainText == nil {
-		// otherwise, login with SSO
-		ssoTokenFromSecureCache, err = idclogin.Login(ctx, cfg, s.StartURL, s.SSOScopes, s.SSOBrowserProfile)
+		grantedCfg, err := grantedconfig.Load()
+		if err != nil {
+			return nil, err
+		}
+
+		// Login with SSO, using device code by default unless authorization code is opted in
+		useAuthCode := grantedCfg.UseAuthorizationCode && !s.UseDeviceCode
+		isHeadless := idclogin.IsHeadlessEnvironment()
+		if useAuthCode && isHeadless {
+			clio.Warn("Headless environment detected, falling back to device code flow instead of authorization code")
+		}
+		if useAuthCode && !isHeadless {
+			ssoTokenFromSecureCache, err = idclogin.LoginWithAuthorizationCode(ctx, cfg, s.StartURL, s.SSOScopes, s.SSOBrowserProfile)
+		} else {
+			ssoTokenFromSecureCache, err = idclogin.Login(ctx, cfg, s.StartURL, s.SSOScopes, s.SSOBrowserProfile)
+		}
 		if err != nil {
 			return nil, err
 		}

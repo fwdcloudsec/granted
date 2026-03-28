@@ -59,6 +59,7 @@ func GlobalFlags() []cli.Flag {
 		&cli.StringSliceFlag{Name: "browser-launch-template-arg", Usage: "Additional arguments to provide to the browser launch template command in key=value format, e.g. '--browser-launch-template-arg foo=bar"},
 		&cli.BoolFlag{Name: "skip-profile-registry-sync", Usage: "You can use this to skip the automated profile registry sync process."},
 		&cli.StringSliceFlag{Name: "attach", Usage: "Attach justifications to your request, such as a Jira ticket id or url `--attach=TP-123`"},
+		&cli.BoolFlag{Name: "use-authorization-code", Usage: "Use authorization code flow with PKCE for SSO login"},
 	}
 }
 
