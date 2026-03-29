@@ -4,21 +4,17 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/common-fate/clio"
+	"github.com/fwdcloudsec/granted/pkg/cfaws"
 	"gopkg.in/ini.v1"
 )
 
-// Find the ~/.aws/config absolute path based on OS.
+// getDefaultAWSConfigLocation returns the AWS config file path,
+// respecting the AWS_CONFIG_FILE environment variable per
+// https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html
 func getDefaultAWSConfigLocation() (string, error) {
-	h, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-
-	configPath := filepath.Join(h, ".aws", "config")
-	return configPath, nil
+	return cfaws.GetAWSConfigPath(), nil
 }
 
 // loadAWSConfigFile loads the `~/.aws/config` file, and creates it if it doesn't exist.
