@@ -134,7 +134,7 @@ func WithRegistry(src *ini.File, dst *ini.File, opts RegistryOpts) (*ini.File, e
 		// Check credential_process allowlist for registry profiles
 		if sec.HasKey("credential_process") {
 			if !isCredentialProcessAllowed(sec.Key("credential_process").Value(), opts.AllowedCredentialProcesses) {
-				clio.Warnf("registry profile %s has a credential_process not in the allowlist, skipping: %s",
+				clio.Warnf("skipping registry profile %q: credential_process not in allowlist (%q)",
 					strings.TrimPrefix(sec.Name(), "profile "), sec.Key("credential_process").Value())
 				continue
 			}
