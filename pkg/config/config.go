@@ -34,8 +34,9 @@ type BrowserLaunchTemplate struct {
 type Config struct {
 	DefaultBrowser string
 	// used to override the builtin filepaths for custom installation locations
-	CustomBrowserPath    string
-	CustomSSOBrowserPath string
+	CustomBrowserPath       string
+	CustomSSOBrowserPath    string
+	CustomBrowserExtraFlags []string
 
 	// AWSConsoleBrowserLaunchTemplate is an optional launch template to use
 	// for opening the AWS console. If specified it overrides the DefaultBrowser
