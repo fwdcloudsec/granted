@@ -8,6 +8,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
+	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
 	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/urfave/cli/v2"
@@ -34,6 +35,11 @@ var SyncCommand = cli.Command{
 // promptUserIfProfileDuplication if true will automatically prefix the duplicate profiles and won't prompt users
 // this is useful when new registry with higher priority is added and there is duplication with lower priority registry.
 func SyncProfileRegistries(ctx context.Context, interactive bool) error {
+	gConf, err := grantedConfig.Load()
+	if err != nil {
+		return err
+	}
+
 	registries, err := GetProfileRegistries(interactive)
 	if err != nil {
 		return err
@@ -62,9 +68,10 @@ func SyncProfileRegistries(ctx context.Context, interactive bool) error {
 		}
 
 		merged, err := awsmerge.WithRegistry(src, configFile, awsmerge.RegistryOpts{
-			Name:                    r.Config.Name,
-			PrefixAllProfiles:       r.Config.PrefixAllProfiles,
-			PrefixDuplicateProfiles: r.Config.PrefixDuplicateProfiles,
+			Name:                       r.Config.Name,
+			PrefixAllProfiles:          r.Config.PrefixAllProfiles,
+			PrefixDuplicateProfiles:    r.Config.PrefixDuplicateProfiles,
+			AllowedCredentialProcesses: gConf.ProfileRegistry.AllowedCredentialProcesses,
 		})
 		var dpe awsmerge.DuplicateProfileError
 		if interactive && errors.As(err, &dpe) {
@@ -91,9 +98,10 @@ func SyncProfileRegistries(ctx context.Context, interactive bool) error {
 
 			// try and merge again
 			merged, err = awsmerge.WithRegistry(src, configFile, awsmerge.RegistryOpts{
-				Name:                    r.Config.Name,
-				PrefixAllProfiles:       r.Config.PrefixAllProfiles,
-				PrefixDuplicateProfiles: true,
+				Name:                       r.Config.Name,
+				PrefixAllProfiles:          r.Config.PrefixAllProfiles,
+				PrefixDuplicateProfiles:    true,
+				AllowedCredentialProcesses: gConf.ProfileRegistry.AllowedCredentialProcesses,
 			})
 			if err != nil {
 				return fmt.Errorf("error after trying to merge profiles again for registry %s: %w", r.Config.Name, err)

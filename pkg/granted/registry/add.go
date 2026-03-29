@@ -112,9 +112,10 @@ var AddCommand = cli.Command{
 		}
 
 		merged, err := awsmerge.WithRegistry(src, dst, awsmerge.RegistryOpts{
-			Name:                    name,
-			PrefixAllProfiles:       prefixAllProfiles,
-			PrefixDuplicateProfiles: prefixDuplicateProfiles,
+			Name:                       name,
+			PrefixAllProfiles:          prefixAllProfiles,
+			PrefixDuplicateProfiles:    prefixDuplicateProfiles,
+			AllowedCredentialProcesses: gConf.ProfileRegistry.AllowedCredentialProcesses,
 		})
 		var dpe awsmerge.DuplicateProfileError
 		if errors.As(err, &dpe) {
@@ -142,9 +143,10 @@ var AddCommand = cli.Command{
 
 			// try and merge again
 			merged, err = awsmerge.WithRegistry(src, dst, awsmerge.RegistryOpts{
-				Name:                    name,
-				PrefixAllProfiles:       prefixAllProfiles,
-				PrefixDuplicateProfiles: true,
+				Name:                       name,
+				PrefixAllProfiles:          prefixAllProfiles,
+				PrefixDuplicateProfiles:    true,
+				AllowedCredentialProcesses: gConf.ProfileRegistry.AllowedCredentialProcesses,
 			})
 			if err != nil {
 				return fmt.Errorf("error after trying to merge profiles again: %w", err)
