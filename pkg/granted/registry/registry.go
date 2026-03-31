@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/granted/registry/cfregistry"
 	"github.com/fwdcloudsec/granted/pkg/granted/registry/gitregistry"
 	"gopkg.in/ini.v1"
 )
@@ -48,7 +49,18 @@ func GetProfileRegistries(interactive bool) ([]loadedRegistry, error) {
 				Config:   r,
 				Registry: reg,
 			})
+		} else {
+			//set up a common fate registry
+			reg := cfregistry.New(cfregistry.Opts{
+				Name: r.Name,
+				URL:  r.URL,
+			})
+			registries = append(registries, loadedRegistry{
+				Config:   r,
+				Registry: reg,
+			})
 		}
+
 	}
 
 	// this will sort the registry based on priority.
