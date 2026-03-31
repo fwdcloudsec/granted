@@ -15,10 +15,7 @@ import (
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/granted/auth"
 	"github.com/fwdcloudsec/granted/pkg/granted/doctor"
-	"github.com/fwdcloudsec/granted/pkg/granted/eks"
-	"github.com/fwdcloudsec/granted/pkg/granted/exp"
 	"github.com/fwdcloudsec/granted/pkg/granted/middleware"
-	"github.com/fwdcloudsec/granted/pkg/granted/rds"
 	"github.com/fwdcloudsec/granted/pkg/granted/registry"
 	"github.com/fwdcloudsec/granted/pkg/granted/request"
 	"github.com/fwdcloudsec/granted/pkg/granted/settings"
@@ -58,14 +55,10 @@ func GetCliApp() *cli.App {
 			&registry.ProfileRegistryCommand,
 			&ConsoleCommand,
 			&login,
-			&exp.Command,
 			&CacheCommand,
 			&auth.Command,
 			&request.Command,
 			&doctor.Command,
-			&rds.Command,
-			&CFCommand,
-			&eks.Command,
 		},
 		// Granted may be invoked via our browser extension, which uses the Native Messaging
 		// protocol to communicate with the Granted CLI. If invoked this way, the browser calls
