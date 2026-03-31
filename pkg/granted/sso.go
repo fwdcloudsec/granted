@@ -20,10 +20,6 @@ import (
 	"github.com/common-fate/awsconfigfile"
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/clierr"
-	"github.com/common-fate/glide-cli/cmd/command"
-	"github.com/common-fate/glide-cli/pkg/client"
-	cfconfig "github.com/common-fate/glide-cli/pkg/config"
-	"github.com/common-fate/glide-cli/pkg/profilesource"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
 	grantedconfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/idclogin"
@@ -349,39 +345,10 @@ var LoginCommand = cli.Command{
 	},
 }
 
-func getCFProfileSource(c *cli.Context, region, startURL string) (profilesource.Source, error) {
-	kr, err := securestorage.NewCF().Storage.Keyring()
-	if err != nil {
-		return profilesource.Source{}, err
-	}
-
-	// login if the CF API isn't configured
-	if !cfconfig.IsConfigured() {
-		lf := command.LoginFlow{Keyring: kr, ForceInteractive: true}
-		err = lf.LoginAction(c)
-		if err != nil {
-			return profilesource.Source{}, err
-		}
-	}
-
-	cfg, err := cfconfig.Load()
-	if err != nil {
-		return profilesource.Source{}, err
-	}
-
-	cf, err := client.FromConfig(c.Context, cfg,
-		client.WithKeyring(kr),
-		client.WithLoginHint("granted login"),
-	)
-	if err != nil {
-		return profilesource.Source{}, err
-	}
-
-	ps := profilesource.Source{SSORegion: region, StartURL: startURL, Client: cf, DashboardURL: cfg.CurrentOrEmpty().DashboardURL}
-
-	clio.Infof("listing available profiles from Common Fate (%s)", ps.DashboardURL)
-
-	return ps, nil
+// getCFProfileSource is deprecated - the Common Fate profile source integration
+// has been removed. Use the HTTP registry instead.
+func getCFProfileSource(c *cli.Context, region, startURL string) (awsconfigfile.Source, error) {
+	return nil, fmt.Errorf("the 'commonfate' profile source is no longer supported; use the HTTP profile registry instead (type: http)")
 }
 
 type AWSSSOSource struct {

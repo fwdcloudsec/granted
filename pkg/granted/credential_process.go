@@ -6,19 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"connectrpc.com/connect"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/pkg/errors"
 
 	"github.com/common-fate/clio"
-	"github.com/common-fate/grab"
-	"github.com/common-fate/sdk/eid"
-	accessv1alpha1 "github.com/common-fate/sdk/gen/commonfate/access/v1alpha1"
-	"github.com/common-fate/sdk/service/access/grants"
-	identitysvc "github.com/common-fate/sdk/service/identity"
 	"github.com/fwdcloudsec/granted/pkg/accessrequest"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
-	"github.com/fwdcloudsec/granted/pkg/cfcfg"
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	sethRetry "github.com/sethvargo/go-retry"
@@ -60,7 +53,6 @@ var CredentialProcess = cli.Command{
 		useCache := !cfg.DisableCredentialProcessCache && !cliNoCache
 
 		if useCache {
-			// try and look up session credentials from the secure storage cache.
 			cachedCreds, err := secureSessionCredentialStorage.GetCredentials(profileName)
 			if err != nil {
 				clio.Debugw("error loading cached credentials", "error", err, "profile", profileName)
@@ -69,7 +61,6 @@ var CredentialProcess = cli.Command{
 			} else if cachedCreds.CanExpire && cachedCreds.Expires.Add(-c.Duration("window")).Before(time.Now()) {
 				clio.Debugw("refreshing credentials", "reason", "credentials are expired")
 			} else {
-				// if we get here, the cached session credentials are valid
 				clio.Debugw("credentials found in cache", "expires", cachedCreds.Expires.String(), "canExpire", cachedCreds.CanExpire, "timeNow", time.Now().String(), "refreshIfBeforeNow", cachedCreds.Expires.Add(-c.Duration("window")).String())
 				return printCredentials(*cachedCreds)
 			}
@@ -79,7 +70,6 @@ var CredentialProcess = cli.Command{
 			clio.Debugw("refreshing credentials", "reason", "credential process cache is disabled via config")
 		}
 
-		// purge the credentials from the cache
 		err = secureSessionCredentialStorage.SecureStorage.Clear(profileName)
 		if err != nil {
 			clio.Debugw("error clearing cached credentials", "error", err, "profile", profileName)
@@ -102,71 +92,25 @@ var CredentialProcess = cli.Command{
 
 		credentials, err := profile.AssumeTerminal(c.Context, cfaws.ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: autoLogin, UseAuthorizationCode: cfg.UseAuthorizationCode})
 		if err != nil {
-			// We first check if there was an active grant for this profile, and if there was, allow 30s of retries before bailing out
-			cfg, cfConfigErr := cfcfg.Load(c.Context, profile)
-			if cfConfigErr != nil {
-				clio.Debugw("failed to load cfconfig, skipping check for active grants in a common fate deployment", "error", cfConfigErr)
-				return err
-			}
+			clio.Debugw("initial assume failed, attempting retry with backoff", "error", err)
 
-			grantsClient := grants.NewFromConfig(cfg)
-			idClient := identitysvc.NewFromConfig(cfg)
-			callerID, callerIDErr := idClient.GetCallerIdentity(c.Context, connect.NewRequest(&accessv1alpha1.GetCallerIdentityRequest{}))
-			if callerIDErr != nil {
-				clio.Debugw("failed to load caller identity for user", "error", callerIDErr)
-				// return the original error
-				return err
-			}
-			grants, queryGrantsErr := grab.AllPages(c.Context, func(ctx context.Context, nextToken *string) ([]*accessv1alpha1.Grant, *string, error) {
-				grants, err := grantsClient.QueryGrants(c.Context, connect.NewRequest(&accessv1alpha1.QueryGrantsRequest{
-					Principal: callerID.Msg.Principal.Eid,
-					Target:    eid.New("AWS::Account", profile.AWSConfig.SSOAccountID).ToAPI(),
-					// This API needs to be updated to use specifiers, for now, fetch all active grants and check for a match on the role name
-					// Role:      eid.New("AWS::Account", profile.AWSConfig.SSOAccountID).ToAPI(),
-					Status: accessv1alpha1.GrantStatus_GRANT_STATUS_ACTIVE.Enum(),
-				}))
-				if err != nil {
-					return nil, nil, err
-				}
-				return grants.Msg.Grants, &grants.Msg.NextPageToken, nil
-			})
-
-			if queryGrantsErr != nil {
-				clio.Debugw("failed to query for active grants", "error", queryGrantsErr)
-				// return the original error
-				return err
-			}
-
-			var foundActiveGrant bool
-			for _, grant := range grants {
-				if grant.Role.Name == profile.AWSConfig.SSORoleName {
-					clio.Debugw("found active grant matching the profile, will retry assuming role", "grant", grant)
-					foundActiveGrant = true
-					break
-				}
-			}
-			if !foundActiveGrant {
-				clio.Debug("did not find any matching active grants for the profile, will not retry assuming role")
-				clio.Debugw("could not assume role due to the following error, notifying user to try requesting access", "error", err)
-				err := accessrequest.Profile{Name: profileName}.Save()
-				if err != nil {
-					return err
-				}
-				return errors.New("You don't have access but you can request it with 'granted request latest'")
-			}
-
-			// there is an active grant so retry assuming because the error may be transient
+			// Retry with exponential backoff in case of transient errors
 			b := sethRetry.NewFibonacci(time.Second)
 			b = sethRetry.WithMaxDuration(time.Second*30, b)
-			err = sethRetry.Do(c.Context, b, func(ctx context.Context) (err error) {
+			retryErr := sethRetry.Do(c.Context, b, func(ctx context.Context) (err error) {
 				credentials, err = profile.AssumeTerminal(c.Context, cfaws.ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: autoLogin})
 				if err != nil {
 					return sethRetry.RetryableError(err)
 				}
 				return nil
 			})
-			if err != nil {
-				return err
+			if retryErr != nil {
+				clio.Debugw("could not assume role after retries, notifying user to try requesting access", "error", err)
+				saveErr := accessrequest.Profile{Name: profileName}.Save()
+				if saveErr != nil {
+					return saveErr
+				}
+				return errors.New("You don't have access but you can request it with 'granted request latest'")
 			}
 		}
 		if !cfg.DisableCredentialProcessCache {

@@ -8,7 +8,7 @@ import (
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
-	"github.com/fwdcloudsec/granted/pkg/granted/registry/cfregistry"
+	"github.com/fwdcloudsec/granted/pkg/granted/registry/httpregistry"
 	"github.com/fwdcloudsec/granted/pkg/granted/registry/gitregistry"
 	"github.com/fwdcloudsec/granted/pkg/testable"
 
@@ -165,7 +165,7 @@ var AddCommand = cli.Command{
 			return nil
 		} else {
 
-			registry := cfregistry.New(cfregistry.Opts{
+			registry := httpregistry.New(httpregistry.Opts{
 				Name: name,
 				URL:  URL,
 			})

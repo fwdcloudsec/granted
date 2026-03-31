@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"github.com/common-fate/cli/cmd/cli/command"
+	"fmt"
+
 	"github.com/common-fate/clio"
-	"github.com/common-fate/sdk/config"
-	"github.com/common-fate/sdk/loginflow"
+	"github.com/fwdcloudsec/granted/pkg/providercfg"
 	"github.com/urfave/cli/v2"
 )
 
@@ -13,43 +13,45 @@ var Command = cli.Command{
 	Usage: "Manage OIDC authentication for Granted",
 	Flags: []cli.Flag{},
 	Subcommands: []*cli.Command{
-		&command.Configure,
 		&loginCommand,
 		&logoutCommand,
-		&command.Context,
 	},
 }
 
 var loginCommand = cli.Command{
 	Name:  "login",
-	Usage: "Authenticate to an OIDC provider",
+	Usage: "Authenticate to an access provider",
+	Flags: []cli.Flag{
+		&cli.StringFlag{Name: "url", Usage: "The access provider URL to authenticate with"},
+	},
 	Action: func(c *cli.Context) error {
-		cfg, err := config.LoadDefault(c.Context)
-		if err == config.ErrConfigFileNotFound {
-			clio.Errorf("The Common Fate config file (~/.cf/config by default) was not found. To fix this, run 'granted auth configure https://commonfate.example.com' (replacing the URL in the command with your Common Fate deployment URL")
+		providerURL := c.String("url")
+		if providerURL == "" {
+			providerURL = c.Args().First()
 		}
+		if providerURL == "" {
+			return fmt.Errorf("please provide a provider URL, e.g. 'granted auth login https://provider.example.com'")
+		}
+
+		cfg, err := providercfg.LoadFromURL(c.Context, providerURL)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load provider config from %s: %w", providerURL, err)
 		}
 
-		lf := loginflow.NewFromConfig(cfg)
+		// TODO: implement OIDC login flow using cfg.Auth
+		clio.Infof("Provider config loaded from %s (auth type: %s, issuer: %s)", providerURL, cfg.Auth.Type, cfg.Auth.Issuer)
+		clio.Warn("OIDC login flow is not yet implemented. Please authenticate via your browser.")
 
-		return lf.Login(c.Context)
+		return nil
 	},
 }
 
 var logoutCommand = cli.Command{
 	Name:  "logout",
-	Usage: "Log out of an OIDC provider",
+	Usage: "Log out of an access provider",
 	Action: func(c *cli.Context) error {
-		cfg, err := config.LoadDefault(c.Context)
-		if err == config.ErrConfigFileNotFound {
-			clio.Errorf("The Common Fate config file (~/.cf/config by default) was not found. To fix this, run 'granted auth configure https://commonfate.example.com' (replacing the URL in the command with your Common Fate deployment URL")
-		}
-		if err != nil {
-			return err
-		}
-
-		return cfg.TokenStore.Clear()
+		// TODO: implement logout (clear stored tokens)
+		clio.Info("Logout is not yet implemented")
+		return nil
 	},
 }
