@@ -120,6 +120,7 @@ type Registry struct {
 	PrefixDuplicateProfiles bool   `toml:"prefixDuplicateProfiles,omitempty"`
 	PrefixAllProfiles       bool   `toml:"prefixAllProfiles,omitempty"`
 	Type                    string `toml:"type,omitempty"`
+	TenantID                string `toml:"tenantID,omitempty"`
 }
 
 type AWSSSOConfiguration struct {

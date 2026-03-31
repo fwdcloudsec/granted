@@ -2,9 +2,12 @@ package auth
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/common-fate/clio"
+	"github.com/fwdcloudsec/granted/pkg/idclogin"
 	"github.com/fwdcloudsec/granted/pkg/providercfg"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"github.com/urfave/cli/v2"
 )
 
@@ -38,10 +41,33 @@ var loginCommand = cli.Command{
 			return fmt.Errorf("failed to load provider config from %s: %w", providerURL, err)
 		}
 
-		// TODO: implement OIDC login flow using cfg.Auth
-		clio.Infof("Provider config loaded from %s (auth type: %s, issuer: %s)", providerURL, cfg.Auth.Type, cfg.Auth.Issuer)
-		clio.Warn("OIDC login flow is not yet implemented. Please authenticate via your browser.")
+		if cfg.Auth.Type != "oidc" {
+			return fmt.Errorf("unsupported auth type '%s' for provider at %s (expected 'oidc')", cfg.Auth.Type, providerURL)
+		}
 
+		output, err := idclogin.ProviderLogin(c.Context, idclogin.ProviderLoginInput{
+			IssuerURL: cfg.Auth.Issuer,
+			ClientID:  cfg.Auth.ClientID,
+			Scopes:    cfg.Auth.Scopes,
+		})
+		if err != nil {
+			return fmt.Errorf("authentication failed: %w", err)
+		}
+
+		tokenStorage := securestorage.NewProviderTokenStorage()
+		err = tokenStorage.StoreToken(providerURL, securestorage.ProviderToken{
+			AccessToken:  output.AccessToken,
+			RefreshToken: output.RefreshToken,
+			IDToken:      output.IDToken,
+			TokenType:    output.TokenType,
+			Expiry:       time.Now().Add(time.Duration(output.ExpiresIn) * time.Second),
+			ProviderURL:  providerURL,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to store token: %w", err)
+		}
+
+		clio.Successf("Successfully authenticated to %s (%s)", cfg.Provider, providerURL)
 		return nil
 	},
 }
@@ -49,9 +75,25 @@ var loginCommand = cli.Command{
 var logoutCommand = cli.Command{
 	Name:  "logout",
 	Usage: "Log out of an access provider",
+	Flags: []cli.Flag{
+		&cli.StringFlag{Name: "url", Usage: "The access provider URL to log out from"},
+	},
 	Action: func(c *cli.Context) error {
-		// TODO: implement logout (clear stored tokens)
-		clio.Info("Logout is not yet implemented")
+		providerURL := c.String("url")
+		if providerURL == "" {
+			providerURL = c.Args().First()
+		}
+		if providerURL == "" {
+			return fmt.Errorf("please provide a provider URL, e.g. 'granted auth logout https://provider.example.com'")
+		}
+
+		tokenStorage := securestorage.NewProviderTokenStorage()
+		err := tokenStorage.ClearToken(providerURL)
+		if err != nil {
+			return fmt.Errorf("failed to clear token: %w", err)
+		}
+
+		clio.Successf("Logged out from %s", providerURL)
 		return nil
 	},
 }
