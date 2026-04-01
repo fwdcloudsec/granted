@@ -26,7 +26,12 @@ type HTTPProvider struct {
 }
 
 // New creates an HTTPProvider from a ProviderConfig.
+// If tenantID is empty, falls back to the tenant_id from the provider config
+// (auto-populated by single-tenant providers).
 func New(cfg *providercfg.ProviderConfig, providerURL string, tenantID string) *HTTPProvider {
+	if tenantID == "" {
+		tenantID = cfg.TenantID
+	}
 	return &HTTPProvider{
 		cfg:          cfg,
 		client:       &http.Client{Timeout: 30 * time.Second},

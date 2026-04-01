@@ -16,6 +16,7 @@ type ProviderConfig struct {
 	Version   string     `json:"version"`
 	APIURL    string     `json:"api_url"`
 	AccessURL string     `json:"access_url"`
+	TenantID  string     `json:"tenant_id,omitempty"`
 	Auth      AuthConfig `json:"auth"`
 }
 

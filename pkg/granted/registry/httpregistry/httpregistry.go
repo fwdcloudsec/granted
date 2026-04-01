@@ -144,8 +144,12 @@ func (r *Registry) AWSProfiles(ctx context.Context, interactive bool) (*ini.File
 		if accessToken != "" {
 			req.Header.Set("Authorization", "Bearer "+accessToken)
 		}
-		if r.opts.TenantID != "" {
-			req.Header.Set("X-Tenant-ID", r.opts.TenantID)
+		tenantID := r.opts.TenantID
+		if tenantID == "" {
+			tenantID = cfg.TenantID
+		}
+		if tenantID != "" {
+			req.Header.Set("X-Tenant-ID", tenantID)
 		}
 
 		resp, err := client.Do(req)
