@@ -12,7 +12,6 @@ import (
 
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/internal/build"
-	"github.com/fwdcloudsec/granted/pkg/assume"
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/shells"
 	"github.com/urfave/cli/v2"
@@ -54,26 +53,55 @@ var CompletionCommand = cli.Command{
 }
 
 func installFishCompletions(c *cli.Context) error {
-	assumeApp := assume.GetCliApp()
-	c.App.Name = build.GrantedBinaryName()
-	assumeApp.Name = build.AssumeScriptName()
-	grantedAppOutput, _ := c.App.ToFishCompletion()
-	assumeAppOutput, _ := assumeApp.ToFishCompletion()
-	combinedOutput := fmt.Sprintf("%s\n%s", grantedAppOutput, assumeAppOutput)
+	tmpl, err := template.ParseFS(templateFiles, "templates/*")
+	if err != nil {
+		return err
+	}
+
+	assumeData := AutoCompleteTemplateData{
+		Program: build.AssumeScriptName(),
+	}
+	assumeBuf := new(bytes.Buffer)
+	err = tmpl.ExecuteTemplate(assumeBuf, "fish_autocomplete_assume.tmpl", assumeData)
+	if err != nil {
+		return err
+	}
+
+	grantedData := AutoCompleteTemplateData{
+		Program: build.GrantedBinaryName(),
+	}
+	grantedBuf := new(bytes.Buffer)
+	err = tmpl.ExecuteTemplate(grantedBuf, "fish_autocomplete_granted.tmpl", grantedData)
+	if err != nil {
+		return err
+	}
 
 	// try to fetch user home dir
-	user, _ := user.Current()
+	usr, _ := user.Current()
+	completionsDir := path.Join(usr.HomeDir, ".config/fish/completions")
 
-	executableDir := path.Join(user.HomeDir, ".config/fish/completions", fmt.Sprintf("%s.fish", c.App.Name))
+	// ensure the completions directory exists
+	err = os.MkdirAll(completionsDir, 0755)
+	if err != nil {
+		return fmt.Errorf("something went wrong when creating fish completions directory: %s", err.Error())
+	}
 
-	// Try to create a file
-	err := os.WriteFile(executableDir, []byte(combinedOutput), 0600)
+	assumeFile := path.Join(completionsDir, fmt.Sprintf("%s.fish", assumeData.Program))
+	err = os.WriteFile(assumeFile, assumeBuf.Bytes(), 0600)
 	if err != nil {
 		return fmt.Errorf("something went wrong when saving fish autocompletions: %s", err.Error())
 	}
+
+	grantedFile := path.Join(completionsDir, fmt.Sprintf("%s.fish", grantedData.Program))
+	err = os.WriteFile(grantedFile, grantedBuf.Bytes(), 0600)
+	if err != nil {
+		return fmt.Errorf("something went wrong when saving fish autocompletions: %s", err.Error())
+	}
+
 	clio.Success("Fish autocompletions generated successfully")
-	clio.Info("To use these completions please run the executable:")
-	clio.Infof("source %s", executableDir)
+	clio.Info("To use these completions please run:")
+	clio.Infof("source %s", assumeFile)
+	clio.Infof("source %s", grantedFile)
 	return nil
 }
 
