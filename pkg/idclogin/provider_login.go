@@ -54,7 +54,7 @@ func DiscoverOIDC(ctx context.Context, issuerURL string) (*OIDCDiscovery, error)
 	if err != nil {
 		return nil, fmt.Errorf("fetching OIDC discovery from %s: %w", discoveryURL, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("OIDC discovery returned HTTP %d from %s", resp.StatusCode, discoveryURL)
@@ -278,7 +278,7 @@ func exchangeCodeForToken(ctx context.Context, tokenEndpoint string, input token
 	if err != nil {
 		return nil, fmt.Errorf("token exchange request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

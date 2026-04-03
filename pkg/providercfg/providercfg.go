@@ -46,7 +46,7 @@ func LoadFromURL(ctx context.Context, providerURL string) (*ProviderConfig, erro
 	if err != nil {
 		return nil, fmt.Errorf("fetching provider config from %s: %w", configURL, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("provider config returned HTTP %d from %s", resp.StatusCode, configURL)
