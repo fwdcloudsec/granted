@@ -29,6 +29,8 @@ import (
 	"github.com/fwdcloudsec/granted/pkg/console"
 	"github.com/fwdcloudsec/granted/pkg/forkprocess"
 	"github.com/fwdcloudsec/granted/pkg/hook/accessrequesthook"
+	"github.com/fwdcloudsec/granted/pkg/hook/httpprovider"
+	"github.com/fwdcloudsec/granted/pkg/providercfg"
 	"github.com/fwdcloudsec/granted/pkg/launcher"
 	"github.com/fwdcloudsec/granted/pkg/testable"
 	cfflags "github.com/fwdcloudsec/granted/pkg/urfav_overrides"
@@ -36,7 +38,6 @@ import (
 	"github.com/hako/durafmt"
 	sethRetry "github.com/sethvargo/go-retry"
 	"github.com/urfave/cli/v2"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	"gopkg.in/ini.v1"
 )
 
@@ -317,7 +318,6 @@ func AssumeCommand(c *cli.Context) error {
 	wait := assumeFlags.Bool("wait")
 	retryDuration := time.Minute * 1
 	if wait {
-		//if wait is specified, increase the timeout to 15 minutes.
 		retryDuration = time.Minute * 15
 	}
 
@@ -341,15 +341,22 @@ func AssumeCommand(c *cli.Context) error {
 		creds, err := profile.AssumeConsole(c.Context, configOpts)
 		if err != nil && strings.HasPrefix(err.Error(), "no access") {
 			clio.Debugw("received a No Access error", "error", err)
-			hook := accessrequesthook.Hook{}
 
-			var apiDuration *durationpb.Duration
+			hook, hookCreateErr := accessrequesthook.NewHookFromProfile(profile, newHTTPProvider)
+			if hookCreateErr != nil {
+				return hookCreateErr
+			}
+			if hook == nil {
+				return err
+			}
+
+			var apiDuration *time.Duration
 			if duration != "" {
 				d, err := time.ParseDuration(duration)
 				if err != nil {
 					return err
 				}
-				apiDuration = durationpb.New(d)
+				apiDuration = &d
 			}
 
 			noAccessInput := accessrequesthook.NoAccessInput{
@@ -375,7 +382,6 @@ func AssumeCommand(c *cli.Context) error {
 				err = sethRetry.Do(c.Context, b, func(ctx context.Context) (err error) {
 
 					if !justActivated {
-						//also proactively check if request has been approved and attempt to activate
 						err = hook.RetryAccess(ctx, noAccessInput)
 						if err != nil {
 							return sethRetry.RetryableError(err)
@@ -507,15 +513,22 @@ func AssumeCommand(c *cli.Context) error {
 		creds, err := profile.AssumeTerminal(c.Context, configOpts)
 		if err != nil && strings.HasPrefix(err.Error(), "no access") {
 			clio.Debugw("received a No Access error", "error", err)
-			hook := accessrequesthook.Hook{}
 
-			var apiDuration *durationpb.Duration
+			hook, hookCreateErr := accessrequesthook.NewHookFromProfile(profile, newHTTPProvider)
+			if hookCreateErr != nil {
+				return hookCreateErr
+			}
+			if hook == nil {
+				return err
+			}
+
+			var apiDuration *time.Duration
 			if duration != "" {
 				d, err := time.ParseDuration(duration)
 				if err != nil {
 					return err
 				}
-				apiDuration = durationpb.New(d)
+				apiDuration = &d
 			}
 			noAccessInput := accessrequesthook.NoAccessInput{
 				Profile:   profile,
@@ -539,7 +552,6 @@ func AssumeCommand(c *cli.Context) error {
 				err = sethRetry.Do(c.Context, b, func(ctx context.Context) (err error) {
 
 					if !justActivated {
-						//also proactively check if request has been approved and attempt to activate
 						err = hook.RetryAccess(ctx, noAccessInput)
 						if err != nil {
 							return sethRetry.RetryableError(err)
@@ -720,6 +732,14 @@ func EnvKeys(creds aws.Credentials, region string) []string {
 		"AWS_SECRET_ACCESS_KEY=" + creds.SecretAccessKey,
 		"AWS_SESSION_TOKEN=" + creds.SessionToken,
 		"AWS_REGION=" + region}
+}
+
+func newHTTPProvider(providerURL string) (accessrequesthook.AccessProvider, error) {
+	cfg, err := providercfg.LoadFromURL(context.Background(), providerURL)
+	if err != nil {
+		return nil, err
+	}
+	return httpprovider.New(cfg), nil
 }
 
 func filterMultiToken(filterValue string, optValue string, optIndex int) bool {
