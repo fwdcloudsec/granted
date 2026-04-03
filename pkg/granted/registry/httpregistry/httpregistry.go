@@ -9,19 +9,23 @@ import (
 	"time"
 
 	"github.com/common-fate/clio"
+	"github.com/fwdcloudsec/granted/pkg/idclogin"
 	"github.com/fwdcloudsec/granted/pkg/providercfg"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"gopkg.in/ini.v1"
 )
 
 type Registry struct {
-	opts Opts
-	mu   sync.Mutex
-	cfg  *providercfg.ProviderConfig
+	opts         Opts
+	mu           sync.Mutex
+	cfg          *providercfg.ProviderConfig
+	tokenStorage securestorage.ProviderTokenStorage
 }
 
 type Opts struct {
-	Name string
-	URL  string
+	Name     string
+	URL      string
+	TenantID string
 }
 
 // getConfig lazily loads the provider configuration.
@@ -46,8 +50,52 @@ func (r *Registry) getConfig(interactive bool) (*providercfg.ProviderConfig, err
 	return r.cfg, nil
 }
 
+// getToken returns a valid Bearer token for the provider, triggering login if interactive.
+func (r *Registry) getToken(ctx context.Context, cfg *providercfg.ProviderConfig, interactive bool) (string, error) {
+	if cfg.Auth.Type != "oidc" {
+		return "", nil
+	}
+
+	token := r.tokenStorage.GetValidToken(r.opts.URL)
+	if token != nil {
+		return token.AccessToken, nil
+	}
+
+	if !interactive {
+		return "", fmt.Errorf("no valid token for provider %s. Run 'granted auth login --url %s' to authenticate", r.opts.URL, r.opts.URL)
+	}
+
+	output, err := idclogin.ProviderLogin(ctx, idclogin.ProviderLoginInput{
+		IssuerURL: cfg.Auth.Issuer,
+		ClientID:  cfg.Auth.ClientID,
+		Scopes:    cfg.Auth.Scopes,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	providerToken := securestorage.ProviderToken{
+		AccessToken:  output.AccessToken,
+		RefreshToken: output.RefreshToken,
+		IDToken:      output.IDToken,
+		TokenType:    output.TokenType,
+		Expiry:       time.Now().Add(time.Duration(output.ExpiresIn) * time.Second),
+		ProviderURL:  r.opts.URL,
+		TenantID:     r.opts.TenantID,
+	}
+
+	if err := r.tokenStorage.StoreToken(r.opts.URL, providerToken); err != nil {
+		clio.Warnf("failed to store provider token: %s", err)
+	}
+
+	return output.AccessToken, nil
+}
+
 func New(opts Opts) *Registry {
-	return &Registry{opts: opts}
+	return &Registry{
+		opts:         opts,
+		tokenStorage: securestorage.NewProviderTokenStorage(),
+	}
 }
 
 type listProfilesResponse struct {
@@ -56,8 +104,8 @@ type listProfilesResponse struct {
 }
 
 type profileEntry struct {
-	Name       string           `json:"name"`
-	Attributes []profileKeyVal  `json:"attributes"`
+	Name       string          `json:"name"`
+	Attributes []profileKeyVal `json:"attributes"`
 }
 
 type profileKeyVal struct {
@@ -73,6 +121,11 @@ func (r *Registry) AWSProfiles(ctx context.Context, interactive bool) (*ini.File
 
 	client := &http.Client{Timeout: 30 * time.Second}
 
+	accessToken, err := r.getToken(ctx, cfg, interactive)
+	if err != nil {
+		return nil, err
+	}
+
 	var allProfiles []profileEntry
 	var pageToken string
 
@@ -87,6 +140,17 @@ func (r *Registry) AWSProfiles(ctx context.Context, interactive bool) (*ini.File
 			return nil, err
 		}
 		req.Header.Set("Accept", "application/json")
+
+		if accessToken != "" {
+			req.Header.Set("Authorization", "Bearer "+accessToken)
+		}
+		tenantID := r.opts.TenantID
+		if tenantID == "" {
+			tenantID = cfg.TenantID
+		}
+		if tenantID != "" {
+			req.Header.Set("X-Tenant-ID", tenantID)
+		}
 
 		resp, err := client.Do(req)
 		if err != nil {

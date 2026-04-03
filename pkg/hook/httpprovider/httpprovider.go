@@ -11,20 +11,60 @@ import (
 
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/hook/accessrequesthook"
+	"github.com/fwdcloudsec/granted/pkg/idclogin"
 	"github.com/fwdcloudsec/granted/pkg/providercfg"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
 )
 
 // HTTPProvider implements AccessProvider using REST/JSON calls.
 type HTTPProvider struct {
-	cfg    *providercfg.ProviderConfig
-	client *http.Client
+	cfg          *providercfg.ProviderConfig
+	client       *http.Client
+	tokenStorage securestorage.ProviderTokenStorage
+	providerURL  string
+	tenantID     string
 }
 
 // New creates an HTTPProvider from a ProviderConfig.
-func New(cfg *providercfg.ProviderConfig) *HTTPProvider {
+// If tenantID is empty, falls back to the tenant_id from the provider config
+// (auto-populated by single-tenant providers).
+func New(cfg *providercfg.ProviderConfig, providerURL string, tenantID string) *HTTPProvider {
+	if tenantID == "" {
+		tenantID = cfg.TenantID
+	}
 	return &HTTPProvider{
-		cfg:    cfg,
-		client: &http.Client{Timeout: 30 * time.Second},
+		cfg:          cfg,
+		client:       &http.Client{Timeout: 30 * time.Second},
+		tokenStorage: securestorage.NewProviderTokenStorage(),
+		providerURL:  providerURL,
+		tenantID:     tenantID,
+	}
+}
+
+// getToken returns a valid Bearer token, triggering login if needed.
+func (p *HTTPProvider) getToken(ctx context.Context, interactive bool) (string, error) {
+	token := p.tokenStorage.GetValidToken(p.providerURL)
+	if token != nil {
+		return token.AccessToken, nil
+	}
+	if !interactive {
+		return "", fmt.Errorf("no valid token for provider %s. Run 'granted auth login --url %s' to authenticate", p.providerURL, p.providerURL)
+	}
+	if err := p.Login(ctx); err != nil {
+		return "", err
+	}
+	token = p.tokenStorage.GetValidToken(p.providerURL)
+	if token == nil {
+		return "", fmt.Errorf("login succeeded but no token was stored")
+	}
+	return token.AccessToken, nil
+}
+
+// setAuthHeaders adds Authorization and optional X-Tenant-ID to a request.
+func (p *HTTPProvider) setAuthHeaders(req *http.Request, token string) {
+	req.Header.Set("Authorization", "Bearer "+token)
+	if p.tenantID != "" {
+		req.Header.Set("X-Tenant-ID", p.tenantID)
 	}
 }
 
@@ -40,11 +80,17 @@ func (p *HTTPProvider) Ensure(ctx context.Context, req *accessrequesthook.Ensure
 	ensureURL := p.cfg.APIURL + "/v1/access/ensure"
 	clio.Debugw("calling ensure endpoint", "url", ensureURL, "dry_run", req.DryRun)
 
+	token, err := p.getToken(ctx, true)
+	if err != nil {
+		return nil, fmt.Errorf("getting auth token: %w", err)
+	}
+
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, ensureURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+	p.setAuthHeaders(httpReq, token)
 
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
@@ -53,7 +99,31 @@ func (p *HTTPProvider) Ensure(ctx context.Context, req *accessrequesthook.Ensure
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, &UnauthorizedError{StatusCode: resp.StatusCode}
+		clio.Debug("received 401, attempting re-authentication")
+		if err := p.Login(ctx); err != nil {
+			return nil, fmt.Errorf("re-authentication failed: %w", err)
+		}
+		newToken, err := p.getToken(ctx, false)
+		if err != nil {
+			return nil, &UnauthorizedError{StatusCode: resp.StatusCode}
+		}
+
+		httpReq, err = http.NewRequestWithContext(ctx, http.MethodPost, ensureURL, bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		httpReq.Header.Set("Content-Type", "application/json")
+		p.setAuthHeaders(httpReq, newToken)
+
+		resp, err = p.client.Do(httpReq)
+		if err != nil {
+			return nil, fmt.Errorf("ensure retry request failed: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusUnauthorized {
+			return nil, &UnauthorizedError{StatusCode: resp.StatusCode}
+		}
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -68,10 +138,32 @@ func (p *HTTPProvider) Ensure(ctx context.Context, req *accessrequesthook.Ensure
 	return fromAPIResponse(&apiResp), nil
 }
 
-// Login attempts OIDC authentication. For now, returns an error directing the user
-// to authenticate via their browser.
+// Login performs OIDC authentication against the provider's identity provider.
 func (p *HTTPProvider) Login(ctx context.Context) error {
-	return fmt.Errorf("please authenticate via your browser at %s", p.cfg.AccessURL)
+	if p.cfg.Auth.Type != "oidc" {
+		return fmt.Errorf("unsupported auth type: %s (expected 'oidc')", p.cfg.Auth.Type)
+	}
+
+	output, err := idclogin.ProviderLogin(ctx, idclogin.ProviderLoginInput{
+		IssuerURL: p.cfg.Auth.Issuer,
+		ClientID:  p.cfg.Auth.ClientID,
+		Scopes:    p.cfg.Auth.Scopes,
+	})
+	if err != nil {
+		return err
+	}
+
+	token := securestorage.ProviderToken{
+		AccessToken:  output.AccessToken,
+		RefreshToken: output.RefreshToken,
+		IDToken:      output.IDToken,
+		TokenType:    output.TokenType,
+		Expiry:       time.Now().Add(time.Duration(output.ExpiresIn) * time.Second),
+		ProviderURL:  p.providerURL,
+		TenantID:     p.tenantID,
+	}
+
+	return p.tokenStorage.StoreToken(p.providerURL, token)
 }
 
 // RequestURL builds the URL for viewing an access request.
@@ -123,9 +215,9 @@ type apiJustification struct {
 }
 
 type apiEnsureResponse struct {
-	Grants      []apiGrantResult  `json:"grants"`
-	Validation  *apiValidation    `json:"validation,omitempty"`
-	Diagnostics []apiDiagnostic   `json:"diagnostics,omitempty"`
+	Grants      []apiGrantResult `json:"grants"`
+	Validation  *apiValidation   `json:"validation,omitempty"`
+	Diagnostics []apiDiagnostic  `json:"diagnostics,omitempty"`
 }
 
 type apiGrantResult struct {

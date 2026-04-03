@@ -739,7 +739,7 @@ func newHTTPProvider(providerURL string) (accessrequesthook.AccessProvider, erro
 	if err != nil {
 		return nil, err
 	}
-	return httpprovider.New(cfg), nil
+	return httpprovider.New(cfg, providerURL, ""), nil
 }
 
 func filterMultiToken(filterValue string, optValue string, optIndex int) bool {

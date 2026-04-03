@@ -51,8 +51,9 @@ func GetProfileRegistries(interactive bool) ([]loadedRegistry, error) {
 			})
 		} else {
 			reg := httpregistry.New(httpregistry.Opts{
-				Name: r.Name,
-				URL:  r.URL,
+				Name:     r.Name,
+				URL:      r.URL,
+				TenantID: r.TenantID,
 			})
 			registries = append(registries, loadedRegistry{
 				Config:   r,

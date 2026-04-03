@@ -35,7 +35,8 @@ var AddCommand = cli.Command{
 		&cli.BoolFlag{Name: "prefix-duplicate-profiles", Aliases: []string{"pdp"}, Usage: "Provide this flag if you want to append registry name to duplicate profiles"},
 		&cli.BoolFlag{Name: "write-on-sync-failure", Aliases: []string{"wosf"}, Usage: "Always overwrite AWS config, even if sync fails (DEPRECATED)"},
 		&cli.StringSliceFlag{Name: "required-key", Aliases: []string{"r", "requiredKey"}, Usage: "Used to bypass the prompt or override user specific values"},
-		&cli.StringFlag{Name: "type", Value: "git", Usage: "specify the type of granted registry source you want to set up. Default: git"}},
+		&cli.StringFlag{Name: "type", Value: "git", Usage: "specify the type of granted registry source you want to set up. Default: git"},
+		&cli.StringFlag{Name: "tenant-id", Usage: "For HTTP registries: the tenant ID for multi-tenant providers"}},
 
 	ArgsUsage: "--name <registry_name> --url <repository_url> --type <registry_type>",
 	Action: func(c *cli.Context) error {
@@ -60,6 +61,7 @@ var AddCommand = cli.Command{
 		requiredKey := c.StringSlice("required-key")
 		priority := c.Int("priority")
 		registryType := c.String("type")
+		tenantID := c.String("tenant-id")
 
 		if registryType != "git" && registryType != "http" {
 			return fmt.Errorf("invalid registry type provided: %s. must be 'git' or 'http'", c.String("type"))
@@ -83,6 +85,7 @@ var AddCommand = cli.Command{
 			PrefixDuplicateProfiles: prefixDuplicateProfiles,
 			PrefixAllProfiles:       prefixAllProfiles,
 			Type:                    registryType,
+			TenantID:                tenantID,
 		}
 
 		if registryType == "git" {
@@ -166,8 +169,9 @@ var AddCommand = cli.Command{
 		} else {
 
 			registry := httpregistry.New(httpregistry.Opts{
-				Name: name,
-				URL:  URL,
+				Name:     name,
+				URL:      URL,
+				TenantID: tenantID,
 			})
 
 			if err != nil {
