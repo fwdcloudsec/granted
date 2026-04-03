@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/common-fate/clio"
+	"github.com/fwdcloudsec/granted/pkg/awsconfigfile"
 	"github.com/fwdcloudsec/granted/pkg/idclogin"
 	"github.com/fwdcloudsec/granted/pkg/providercfg"
 	"github.com/fwdcloudsec/granted/pkg/securestorage"
@@ -113,7 +114,8 @@ type profileKeyVal struct {
 	Value string `json:"value"`
 }
 
-func (r *Registry) AWSProfiles(ctx context.Context, interactive bool) (*ini.File, error) {
+// fetchProfiles retrieves raw profile entries from the HTTP registry API.
+func (r *Registry) fetchProfiles(ctx context.Context, interactive bool) ([]profileEntry, error) {
 	cfg, err := r.getConfig(interactive)
 	if err != nil {
 		return nil, err
@@ -158,16 +160,16 @@ func (r *Registry) AWSProfiles(ctx context.Context, interactive bool) (*ini.File
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("profile registry returned HTTP %d from %s", resp.StatusCode, listURL)
 		}
 
 		var listResp listProfilesResponse
 		if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("decoding profile list from %s: %w", listURL, err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		allProfiles = append(allProfiles, listResp.Profiles...)
 
@@ -175,6 +177,15 @@ func (r *Registry) AWSProfiles(ctx context.Context, interactive bool) (*ini.File
 			break
 		}
 		pageToken = listResp.NextPageToken
+	}
+
+	return allProfiles, nil
+}
+
+func (r *Registry) AWSProfiles(ctx context.Context, interactive bool) (*ini.File, error) {
+	allProfiles, err := r.fetchProfiles(ctx, interactive)
+	if err != nil {
+		return nil, err
 	}
 
 	result := ini.Empty()
@@ -194,4 +205,32 @@ func (r *Registry) AWSProfiles(ctx context.Context, interactive bool) (*ini.File
 	}
 
 	return result, nil
+}
+
+// GetProfiles implements awsconfigfile.Source, allowing an HTTP registry
+// to be used as a profile source in `granted sso generate` and `granted sso populate`.
+func (r *Registry) GetProfiles(ctx context.Context) ([]awsconfigfile.SSOProfile, error) {
+	entries, err := r.fetchProfiles(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
+	var profiles []awsconfigfile.SSOProfile
+	for _, entry := range entries {
+		attrs := make(map[string]string, len(entry.Attributes))
+		for _, kv := range entry.Attributes {
+			attrs[kv.Key] = kv.Value
+		}
+
+		profiles = append(profiles, awsconfigfile.SSOProfile{
+			SSOStartURL:   attrs["sso_start_url"],
+			SSORegion:     attrs["sso_region"],
+			AccountID:     attrs["sso_account_id"],
+			AccountName:   attrs["account_name"],
+			RoleName:      attrs["sso_role_name"],
+			GeneratedFrom: r.opts.Name,
+		})
+	}
+
+	return profiles, nil
 }

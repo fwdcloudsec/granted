@@ -96,7 +96,7 @@ func (p *HTTPProvider) Ensure(ctx context.Context, req *accessrequesthook.Ensure
 	if err != nil {
 		return nil, fmt.Errorf("ensure request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		clio.Debug("received 401, attempting re-authentication")
@@ -119,7 +119,7 @@ func (p *HTTPProvider) Ensure(ctx context.Context, req *accessrequesthook.Ensure
 		if err != nil {
 			return nil, fmt.Errorf("ensure retry request failed: %w", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode == http.StatusUnauthorized {
 			return nil, &UnauthorizedError{StatusCode: resp.StatusCode}

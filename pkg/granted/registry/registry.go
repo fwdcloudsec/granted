@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
-	"github.com/fwdcloudsec/granted/pkg/granted/registry/httpregistry"
+	"github.com/fwdcloudsec/granted/pkg/httpregistry"
 	"github.com/fwdcloudsec/granted/pkg/granted/registry/gitregistry"
 	"gopkg.in/ini.v1"
 )

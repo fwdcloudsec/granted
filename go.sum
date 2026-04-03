@@ -48,8 +48,6 @@ github.com/benbjohnson/clock v1.3.5 h1:VvXlSJBzZpA/zum6Sj74hxwYI2DIxRWuNIoXAzHZz
 github.com/benbjohnson/clock v1.3.5/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/briandowns/spinner v1.23.0 h1:alDF2guRWqa/FOZZYWjlMIx2L6H0wyewPxo/CH4Pt2A=
 github.com/briandowns/spinner v1.23.0/go.mod h1:rPG4gmXeN3wQV/TsAY4w8lPdIM6RX3yqeBQJSrbXjuE=
-github.com/common-fate/awsconfigfile v0.10.0 h1:9W0JTeO0d3jNLw3Ps9U7IJwLYp4D9zcipq/sqNEWJOg=
-github.com/common-fate/awsconfigfile v0.10.0/go.mod h1:znstvN26aO+KUwmdjwZ+WcmitZ7heEJb5iFdCPokAO8=
 github.com/common-fate/clio v1.2.3 h1:hHwUYZjn66qGYDpgANl0EB/92hyi/Jsnd07qB09rvn4=
 github.com/common-fate/clio v1.2.3/go.mod h1:NkozaS15SA+6Y9zb+82eIj1i41aWShorTqA01GKQ7A8=
 github.com/common-fate/updatecheck v0.3.5 h1:UGIKMnYwuHjbhhCaisLz1pNPg8Z1nXEoWcfqT+4LkAg=

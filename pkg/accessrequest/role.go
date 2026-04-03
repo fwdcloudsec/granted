@@ -26,7 +26,7 @@ func (r Role) URL(dashboardURL string) string {
 	}
 	u.Path = "access"
 	q := u.Query()
-	q.Add("type", "commonfate/aws-sso")
+	q.Add("type", "aws-sso")
 	q.Add("permissionSetArn.label", r.Role)
 	q.Add("accountId", r.Account)
 	u.RawQuery = q.Encode()

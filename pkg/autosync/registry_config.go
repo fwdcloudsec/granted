@@ -19,7 +19,7 @@ type RegistrySyncConfig struct {
 	LastCheckForSync time.Weekday `json:"lastCheckForSync"`
 }
 
-// return the absolute path of commonfate/registry-sync file.
+// return the absolute path of the registry-sync file.
 func (rc RegistrySyncConfig) Path() string {
 	return path.Join(rc.dir, FILENAME)
 }
@@ -59,10 +59,10 @@ func loadRegistryConfig() (rc RegistrySyncConfig, ok bool) {
 		return
 	}
 
-	rc.dir = path.Join(cd, "commonfate")
+	rc.dir = path.Join(cd, "granted")
 	err = os.MkdirAll(rc.dir, os.ModePerm)
 	if err != nil {
-		clio.Debug("error creating commonfate config dir: %s", err.Error())
+		clio.Debug("error creating granted config dir: %s", err.Error())
 		return
 	}
 

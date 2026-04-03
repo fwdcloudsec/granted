@@ -17,11 +17,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sso"
-	"github.com/common-fate/awsconfigfile"
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/clierr"
+	"github.com/fwdcloudsec/granted/pkg/awsconfigfile"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
 	grantedconfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/httpregistry"
 	"github.com/fwdcloudsec/granted/pkg/idclogin"
 	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"github.com/fwdcloudsec/granted/pkg/testable"
@@ -53,7 +54,7 @@ var GenerateCommand = cli.Command{
 		&cli.StringFlag{Name: "config", Usage: "Specify the SSO config section in the Granted config file ([SSO.name])", Value: "default"},
 		&cli.StringFlag{Name: "prefix", Usage: "Specify a prefix for all generated profile names"},
 		&cli.StringFlag{Name: "sso-region", Usage: "Specify the SSO region"},
-		&cli.StringSliceFlag{Name: "source", Usage: "The sources to load AWS profiles from (valid values are: 'aws-sso', 'commonfate')", Value: cli.NewStringSlice("aws-sso")},
+		&cli.StringSliceFlag{Name: "source", Usage: "The sources to load AWS profiles from ('aws-sso' or a named profile registry)", Value: cli.NewStringSlice("aws-sso")},
 		&cli.BoolFlag{Name: "no-credential-process", Usage: "Generate profiles without the Granted credential-process integration"},
 		&cli.StringFlag{Name: "profile-template", Usage: "Specify profile name template", Value: awsconfigfile.DefaultProfileNameTemplate},
 		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
@@ -108,14 +109,12 @@ var GenerateCommand = cli.Command{
 			switch s {
 			case "aws-sso":
 				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOBrowserProfile: ssoBrowserProfile, UseDeviceCode: c.Bool("use-device-code")})
-			case "commonfate", "common-fate", "cf":
-				ps, err := getCFProfileSource(c, ssoRegion, startURL)
+			default:
+				reg, err := registrySourceByName(cfg, s)
 				if err != nil {
 					return err
 				}
-				g.AddSource(ps)
-			default:
-				return fmt.Errorf("unknown profile source %s: allowed sources are aws-sso, commonfate", s)
+				g.AddSource(reg)
 			}
 		}
 
@@ -142,8 +141,8 @@ var PopulateCommand = cli.Command{
 		&cli.StringFlag{Name: "prefix", Usage: "Specify a prefix for all generated profile names"},
 		&cli.StringFlag{Name: "sso-region", Usage: "Specify the SSO region"},
 		&cli.StringSliceFlag{Name: "sso-scope", Usage: "Specify the SSO scopes"},
-		&cli.StringSliceFlag{Name: "source", Usage: "The sources to load AWS profiles from", Value: cli.NewStringSlice("aws-sso")},
-		&cli.BoolFlag{Name: "prune", Usage: "Remove any generated profiles with the 'common_fate_generated_from' key which no longer exist"},
+		&cli.StringSliceFlag{Name: "source", Usage: "The sources to load AWS profiles from ('aws-sso' or a named profile registry)", Value: cli.NewStringSlice("aws-sso")},
+		&cli.BoolFlag{Name: "prune", Usage: "Remove any generated profiles which no longer exist in the source"},
 		&cli.StringFlag{Name: "profile-template", Usage: "Specify profile name template", Value: awsconfigfile.DefaultProfileNameTemplate},
 		&cli.BoolFlag{Name: "no-credential-process", Usage: "Generate profiles without the Granted credential-process integration"},
 		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
@@ -229,14 +228,12 @@ var PopulateCommand = cli.Command{
 			switch s {
 			case "aws-sso":
 				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOScopes: c.StringSlice("sso-scope"), SSOBrowserProfile: ssoBrowserProfile, UseDeviceCode: c.Bool("use-device-code")})
-			case "commonfate", "common-fate", "cf":
-				ps, err := getCFProfileSource(c, ssoRegion, startURL)
+			default:
+				reg, err := registrySourceByName(cfg, s)
 				if err != nil {
 					return err
 				}
-				g.AddSource(ps)
-			default:
-				return fmt.Errorf("unknown profile source %s: allowed sources are aws-sso, commonfate", s)
+				g.AddSource(reg)
 			}
 		}
 		err = g.Generate(ctx)
@@ -345,10 +342,28 @@ var LoginCommand = cli.Command{
 	},
 }
 
-// getCFProfileSource is deprecated - the Common Fate profile source integration
-// has been removed. Use the HTTP registry instead.
-func getCFProfileSource(c *cli.Context, region, startURL string) (awsconfigfile.Source, error) {
-	return nil, fmt.Errorf("the 'commonfate' profile source is no longer supported; use the HTTP profile registry instead (type: http)")
+// registrySourceByName looks up a named profile registry from the Granted
+// config and returns it as an awsconfigfile.Source for use with sso generate/populate.
+func registrySourceByName(cfg *grantedconfig.Config, name string) (awsconfigfile.Source, error) {
+	var registryNames []string
+	for _, r := range cfg.ProfileRegistry.Registries {
+		registryNames = append(registryNames, r.Name)
+		if r.Name == name {
+			if r.Type != "http" && r.Type != "" {
+				return nil, fmt.Errorf("profile registry %q is type %q, only 'http' registries can be used as an SSO profile source", name, r.Type)
+			}
+			return httpregistry.New(httpregistry.Opts{
+				Name:     r.Name,
+				URL:      r.URL,
+				TenantID: r.TenantID,
+			}), nil
+		}
+	}
+
+	if len(registryNames) == 0 {
+		return nil, fmt.Errorf("unknown profile source %q: no profile registries are configured.\nAdd one with: granted registry add --name <name> --url <url> --type http", name)
+	}
+	return nil, fmt.Errorf("unknown profile source %q: no profile registry found with that name.\nAvailable registries: %s", name, fmt.Sprintf("%v", registryNames))
 }
 
 type AWSSSOSource struct {

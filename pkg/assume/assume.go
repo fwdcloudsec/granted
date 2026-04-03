@@ -18,7 +18,7 @@ import (
 	"github.com/alessio/shellescape"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/common-fate/awsconfigfile"
+	"github.com/fwdcloudsec/granted/pkg/awsconfigfile"
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/ansi"
 	"github.com/common-fate/clio/clierr"
@@ -154,7 +154,7 @@ func AssumeCommand(c *cli.Context) error {
 						AccountID:     profile.AWSConfig.SSOAccountID,
 						AccountName:   profile.AWSConfig.SSOAccountID,
 						RoleName:      profile.AWSConfig.SSORoleName,
-						GeneratedFrom: "commonfate",
+						GeneratedFrom: "granted-provider",
 					},
 				},
 			})
