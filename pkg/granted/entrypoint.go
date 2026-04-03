@@ -8,13 +8,22 @@ import (
 
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/cliolog"
+	"github.com/common-fate/glide-cli/cmd/command"
+	"github.com/common-fate/useragent"
 	"github.com/fwdcloudsec/granted/internal/build"
 	"github.com/fwdcloudsec/granted/pkg/chromemsg"
 	"github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/granted/auth"
 	"github.com/fwdcloudsec/granted/pkg/granted/doctor"
+	"github.com/fwdcloudsec/granted/pkg/granted/eks"
+	"github.com/fwdcloudsec/granted/pkg/granted/exp"
 	"github.com/fwdcloudsec/granted/pkg/granted/middleware"
+	"github.com/fwdcloudsec/granted/pkg/granted/rds"
 	"github.com/fwdcloudsec/granted/pkg/granted/registry"
+	"github.com/fwdcloudsec/granted/pkg/granted/request"
 	"github.com/fwdcloudsec/granted/pkg/granted/settings"
+	"github.com/fwdcloudsec/granted/pkg/securestorage"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 )
@@ -48,8 +57,15 @@ func GetCliApp() *cli.App {
 			middleware.WithBeforeFuncs(&CredentialProcess, middleware.WithAutosync()),
 			&registry.ProfileRegistryCommand,
 			&ConsoleCommand,
+			&login,
+			&exp.Command,
 			&CacheCommand,
+			&auth.Command,
+			&request.Command,
 			&doctor.Command,
+			&rds.Command,
+			&CFCommand,
+			&eks.Command,
 		},
 		// Granted may be invoked via our browser extension, which uses the Native Messaging
 		// protocol to communicate with the Granted CLI. If invoked this way, the browser calls
@@ -90,6 +106,8 @@ func GetCliApp() *cli.App {
 			if err := config.SetupConfigFolder(); err != nil {
 				return err
 			}
+			// set the user agent
+			c.Context = useragent.NewContext(c.Context, "granted", build.Version)
 
 			err = chromemsg.ConfigureHost()
 			if err != nil {
@@ -101,4 +119,26 @@ func GetCliApp() *cli.App {
 	}
 
 	return app
+}
+
+var login = cli.Command{
+	Name:  "login",
+	Usage: "Log in to Glide [deprecated]",
+	Flags: []cli.Flag{
+		&cli.BoolFlag{Name: "lazy", Usage: "When the lazy flag is used, a login flow will only be started when the access token is expired"},
+	},
+	Action: func(c *cli.Context) error {
+		clio.Warn("this command is deprecated and will be removed in a future release")
+		clio.Warn("use granted auth login if you are trying to authenticate with a Common Fate deployment")
+
+		k, err := securestorage.NewCF().Storage.Keyring()
+		if err != nil {
+			return errors.Wrap(err, "loading keyring")
+		}
+
+		// wrap the nested CLI command with the keyring
+		lf := command.LoginFlow{Keyring: k}
+
+		return lf.LoginAction(c)
+	},
 }

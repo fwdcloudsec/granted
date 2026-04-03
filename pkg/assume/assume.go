@@ -1,6 +1,7 @@
 package assume
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -27,12 +28,15 @@ import (
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/console"
 	"github.com/fwdcloudsec/granted/pkg/forkprocess"
+	"github.com/fwdcloudsec/granted/pkg/hook/accessrequesthook"
 	"github.com/fwdcloudsec/granted/pkg/launcher"
 	"github.com/fwdcloudsec/granted/pkg/testable"
 	cfflags "github.com/fwdcloudsec/granted/pkg/urfav_overrides"
 	"github.com/fatih/color"
 	"github.com/hako/durafmt"
+	sethRetry "github.com/sethvargo/go-retry"
 	"github.com/urfave/cli/v2"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	"gopkg.in/ini.v1"
 )
 
@@ -301,12 +305,21 @@ func AssumeCommand(c *cli.Context) error {
 		configOpts.Duration = d
 	}
 
+	reason := assumeFlags.String("reason")
+	attachments := assumeFlags.StringSlice("attach")
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
 
 	configOpts.UseAuthorizationCode = assumeFlags.Bool("use-authorization-code") || cfg.UseAuthorizationCode
+
+	wait := assumeFlags.Bool("wait")
+	retryDuration := time.Minute * 1
+	if wait {
+		//if wait is specified, increase the timeout to 15 minutes.
+		retryDuration = time.Minute * 15
+	}
 
 	// if getConsoleURL is true, we'll use the AWS federated login to retrieve a URL to access the console.
 	// depending on how Granted is configured, this is then printed to the terminal or a browser is launched at the URL automatically.
@@ -328,7 +341,62 @@ func AssumeCommand(c *cli.Context) error {
 		creds, err := profile.AssumeConsole(c.Context, configOpts)
 		if err != nil && strings.HasPrefix(err.Error(), "no access") {
 			clio.Debugw("received a No Access error", "error", err)
-			// TODO: this is where we can add a hook in future to allow users to define a shell script to be executed to automatically request access, etc.
+			hook := accessrequesthook.Hook{}
+
+			var apiDuration *durationpb.Duration
+			if duration != "" {
+				d, err := time.ParseDuration(duration)
+				if err != nil {
+					return err
+				}
+				apiDuration = durationpb.New(d)
+			}
+
+			noAccessInput := accessrequesthook.NoAccessInput{
+				Profile:     profile,
+				Reason:      reason,
+				Attachments: attachments,
+				Duration:    apiDuration,
+				Confirm:     assumeFlags.Bool("confirm"),
+				Wait:        wait,
+				StartTime:   time.Now(),
+			}
+			retry, justActivated, hookErr := hook.NoAccess(c.Context, noAccessInput)
+			if hookErr != nil {
+				return hookErr
+			}
+
+			if retry {
+				// reset the start time for the timer (otherwise it shows 2s, 7s, 12s etc)
+				noAccessInput.StartTime = time.Now()
+
+				b := sethRetry.NewConstant(5 * time.Second)
+				b = sethRetry.WithMaxDuration(retryDuration, b)
+				err = sethRetry.Do(c.Context, b, func(ctx context.Context) (err error) {
+
+					if !justActivated {
+						//also proactively check if request has been approved and attempt to activate
+						err = hook.RetryAccess(ctx, noAccessInput)
+						if err != nil {
+							return sethRetry.RetryableError(err)
+						}
+					}
+
+					creds, err = profile.AssumeConsole(c.Context, configOpts)
+					if err != nil {
+						return sethRetry.RetryableError(err)
+					}
+
+					// If we successfully got credentials, mark as just activated
+					justActivated = true
+
+					return nil
+				})
+				if err != nil {
+					return err
+				}
+
+			}
 		}
 
 		if err != nil {
@@ -439,7 +507,61 @@ func AssumeCommand(c *cli.Context) error {
 		creds, err := profile.AssumeTerminal(c.Context, configOpts)
 		if err != nil && strings.HasPrefix(err.Error(), "no access") {
 			clio.Debugw("received a No Access error", "error", err)
-			// TODO: this is where we can add a hook in future to allow users to define a shell script to be executed to automatically request access, etc.
+			hook := accessrequesthook.Hook{}
+
+			var apiDuration *durationpb.Duration
+			if duration != "" {
+				d, err := time.ParseDuration(duration)
+				if err != nil {
+					return err
+				}
+				apiDuration = durationpb.New(d)
+			}
+			noAccessInput := accessrequesthook.NoAccessInput{
+				Profile:   profile,
+				Reason:    reason,
+				Duration:  apiDuration,
+				Confirm:   assumeFlags.Bool("confirm"),
+				Wait:      wait,
+				StartTime: time.Now(),
+			}
+			retry, justActivated, hookErr := hook.NoAccess(c.Context, noAccessInput)
+			if hookErr != nil {
+				return hookErr
+			}
+
+			if retry {
+				// reset the start time for the timer (otherwise it shows 2s, 7s, 12s etc)
+				noAccessInput.StartTime = time.Now()
+
+				b := sethRetry.NewConstant(time.Second * 5)
+				b = sethRetry.WithMaxDuration(retryDuration, b)
+				err = sethRetry.Do(c.Context, b, func(ctx context.Context) (err error) {
+
+					if !justActivated {
+						//also proactively check if request has been approved and attempt to activate
+						err = hook.RetryAccess(ctx, noAccessInput)
+						if err != nil {
+							return sethRetry.RetryableError(err)
+						}
+					}
+
+					creds, err = profile.AssumeTerminal(c.Context, configOpts)
+					if err != nil {
+
+						return sethRetry.RetryableError(err)
+					}
+
+					// If we successfully got credentials, mark as just activated
+					justActivated = true
+
+					return nil
+				})
+				if err != nil {
+					return err
+				}
+
+			}
 		}
 
 		if err != nil {
