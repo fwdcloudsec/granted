@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.15
 	github.com/aws/aws-sdk-go-v2/service/sts v1.28.6
+	github.com/common-fate/updatecheck v0.3.5
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/segmentio/ksuid v1.0.4
@@ -17,10 +18,12 @@ require (
 )
 
 require (
+	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/alessio/shellescape v1.4.2
+	github.com/briandowns/spinner v1.23.0
 	github.com/common-fate/clio v1.2.3
-	github.com/common-fate/grab v1.3.0
 	github.com/fatih/color v1.16.0
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-version v1.7.0
 	github.com/schollz/progressbar/v3 v3.13.1
 	go.uber.org/zap v1.26.0
@@ -30,12 +33,10 @@ require (
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
-	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.2 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
@@ -68,7 +69,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iam v1.28.7
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.7 // indirect
 	github.com/aws/smithy-go v1.24.1
-	github.com/common-fate/awsconfigfile v0.10.0
+	github.com/common-fate/useragent v0.1.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/dvsekhvalnov/jose2go v1.8.0 // indirect
@@ -79,11 +80,12 @@ require (
 	github.com/joho/godotenv v1.4.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-isatty v0.0.20
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/sethvargo/go-retry v0.2.4
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/ratelimit v0.3.0
 	golang.org/x/sync v0.19.0
@@ -92,3 +94,5 @@ require (
 	golang.org/x/text v0.34.0
 	gopkg.in/ini.v1 v1.67.0
 )
+
+replace github.com/aws/session-manager-plugin => github.com/common-fate/session-manager-plugin v0.0.0-20240723053832-3d311db99016
