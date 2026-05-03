@@ -8,39 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetDefaultAWSConfigLocation(t *testing.T) {
-	tests := []struct {
-		name       string
-		envValue   string
-		wantCustom bool
-	}{
-		{
-			name:       "uses AWS_CONFIG_FILE when set",
-			envValue:   "/custom/path/config",
-			wantCustom: true,
-		},
-		{
-			name:       "falls back to default when not set",
-			envValue:   "",
-			wantCustom: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("AWS_CONFIG_FILE", tt.envValue)
-
-			got, err := getDefaultAWSConfigLocation()
-			assert.NoError(t, err)
-			if tt.wantCustom {
-				assert.Equal(t, tt.envValue, got)
-			} else {
-				assert.Contains(t, got, ".aws/config")
-			}
-		})
-	}
-}
-
 func TestLoadAWSConfigFile_RespectsEnvVar(t *testing.T) {
 	// Create a temp dir with an AWS config file
 	tmpDir := t.TempDir()
@@ -62,9 +29,15 @@ func TestLoadAWSConfigFile_RespectsEnvVar(t *testing.T) {
 }
 
 func TestLoadAWSConfigFile_DefaultPath(t *testing.T) {
+	// Sandbox HOME: loadAWSConfigFile auto-creates ~/.aws/config when missing,
+	// so without this it would touch the real user's home dir on a fresh machine.
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
 	t.Setenv("AWS_CONFIG_FILE", "")
 
 	_, path, err := loadAWSConfigFile()
 	assert.NoError(t, err)
-	assert.Contains(t, path, ".aws/config")
+	// Exact match — a substring check would also pass for unrelated paths
+	// like "/foo/.aws/config-backup".
+	assert.Equal(t, filepath.Join(tmpHome, ".aws", "config"), path)
 }

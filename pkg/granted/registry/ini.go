@@ -10,19 +10,10 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-// getDefaultAWSConfigLocation returns the AWS config file path,
-// respecting the AWS_CONFIG_FILE environment variable per
-// https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html
-func getDefaultAWSConfigLocation() (string, error) {
-	return cfaws.GetAWSConfigPath(), nil
-}
-
-// loadAWSConfigFile loads the `~/.aws/config` file, and creates it if it doesn't exist.
+// loadAWSConfigFile loads the AWS config file, and creates it if it doesn't exist.
+// It respects the AWS_CONFIG_FILE environment variable.
 func loadAWSConfigFile() (*ini.File, string, error) {
-	filepath, err := getDefaultAWSConfigLocation()
-	if err != nil {
-		return nil, "", err
-	}
+	filepath := cfaws.GetAWSConfigPath()
 
 	if _, err := os.Stat(filepath); os.IsNotExist(err) {
 		clio.Infof("created AWS config file: %s", filepath)
