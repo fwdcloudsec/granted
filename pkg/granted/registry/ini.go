@@ -4,29 +4,16 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/common-fate/clio"
+	"github.com/fwdcloudsec/granted/pkg/cfaws"
 	"gopkg.in/ini.v1"
 )
 
-// Find the ~/.aws/config absolute path based on OS.
-func getDefaultAWSConfigLocation() (string, error) {
-	h, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-
-	configPath := filepath.Join(h, ".aws", "config")
-	return configPath, nil
-}
-
-// loadAWSConfigFile loads the `~/.aws/config` file, and creates it if it doesn't exist.
+// loadAWSConfigFile loads the AWS config file, and creates it if it doesn't exist.
+// It respects the AWS_CONFIG_FILE environment variable.
 func loadAWSConfigFile() (*ini.File, string, error) {
-	filepath, err := getDefaultAWSConfigLocation()
-	if err != nil {
-		return nil, "", err
-	}
+	filepath := cfaws.GetAWSConfigPath()
 
 	if _, err := os.Stat(filepath); os.IsNotExist(err) {
 		clio.Infof("created AWS config file: %s", filepath)
