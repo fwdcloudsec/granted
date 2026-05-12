@@ -188,7 +188,7 @@ func FieldOptions(cfg any) map[string]Field {
 	configValue := reflect.ValueOf(cfg)
 
 	// Check if cfg is a pointer to a struct
-	if configType.Kind() == reflect.Ptr && configType.Elem().Kind() == reflect.Struct {
+	if configType.Kind() == reflect.Pointer && configType.Elem().Kind() == reflect.Struct {
 		configType = configType.Elem()
 		configValue = configValue.Elem()
 	} else if configType.Kind() != reflect.Struct {
@@ -212,7 +212,7 @@ func FieldOptions(cfg any) map[string]Field {
 			}
 
 			//subfield structs reflect as a pointer
-			if kind == reflect.Ptr {
+			if kind == reflect.Pointer {
 				// Dereference the pointer to get the underlying value
 				if !fieldValue.IsNil() {
 					fieldValue = fieldValue.Elem()
