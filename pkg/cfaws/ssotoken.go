@@ -16,11 +16,12 @@ import (
 )
 
 type SSOPlainTextOut struct {
-	AccessToken    string `json:"accessToken"`
-	ExpiresAt      string `json:"expiresAt"`
-	SSOSessionName string `json:"ssoSessionName"`
-	StartUrl       string `json:"startUrl"`
-	Region         string `json:"region"`
+	AccessToken    string   `json:"accessToken"`
+	ExpiresAt      string   `json:"expiresAt"`
+	SSOSessionName string   `json:"ssoSessionName"`
+	StartUrl       string   `json:"startUrl"`
+	Region         string   `json:"region"`
+	Scopes         []string `json:"scopes,omitempty"`
 }
 
 // CreatePlainTextSSO is currently unused. In a future version of the Granted CLI,
@@ -182,14 +183,29 @@ func ReadPlaintextSsoCreds(startUrl string) (SSOPlainTextOut, error) {
 				if err != nil {
 					return SSOPlainTextOut{}, err
 				}
-				// check if the startUrl matches
-				if sso.StartUrl == startUrl {
+				// check if the startUrl matches and the token has appropriate scopes
+				if sso.StartUrl == startUrl && hasSSOScopes(sso.Scopes) {
 					return sso, nil
 				}
 			}
 		}
 	}
 	return SSOPlainTextOut{}, fmt.Errorf("no valid sso token found")
+}
+
+// hasSSOScopes returns true if the token has scopes that include SSO account
+// access, or if no scopes are specified (for backwards compatibility with
+// tokens that don't include scope metadata).
+func hasSSOScopes(scopes []string) bool {
+	if len(scopes) == 0 {
+		return true
+	}
+	for _, scope := range scopes {
+		if strings.HasPrefix(scope, "sso:") {
+			return true
+		}
+	}
+	return false
 }
 
 func GetValidSSOTokenFromPlaintextCache(startUrl string) *securestorage.SSOToken {
