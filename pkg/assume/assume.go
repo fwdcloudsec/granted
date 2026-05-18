@@ -21,6 +21,7 @@ import (
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/ansi"
 	"github.com/common-fate/clio/clierr"
+	"github.com/fatih/color"
 	"github.com/fwdcloudsec/granted/pkg/assumeprint"
 	"github.com/fwdcloudsec/granted/pkg/browser"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
@@ -30,7 +31,6 @@ import (
 	"github.com/fwdcloudsec/granted/pkg/launcher"
 	"github.com/fwdcloudsec/granted/pkg/testable"
 	cfflags "github.com/fwdcloudsec/granted/pkg/urfav_overrides"
-	"github.com/fatih/color"
 	"github.com/hako/durafmt"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/ini.v1"
@@ -465,19 +465,29 @@ func AssumeCommand(c *cli.Context) error {
 			clio.Success("Exported credentials to .env file successfully")
 		}
 
-		if assumeFlags.Bool("export") || cfg.ExportCredsToAWS {
-			err = cfaws.ExportCredsToProfile(profile.Name, creds)
+		exportAsProfileName := strings.TrimSpace(assumeFlags.String("export-as"))
+		if assumeFlags.Bool("export") || cfg.ExportCredsToAWS || exportAsProfileName != "" {
+			exportProfileName := profile.Name
+			applyExportSuffix := true
+			if exportAsProfileName != "" {
+				exportProfileName = exportAsProfileName
+				applyExportSuffix = false
+			}
+
+			err = cfaws.ExportCredsToProfileWithOptions(exportProfileName, creds, applyExportSuffix)
 			if err != nil {
 				return err
 			}
-			var profileName string
-			if cfg.ExportCredentialSuffix == nil {
-				profileName = profile.Name
-				clio.Warn("No credential suffix found. This can cause issues with using exported credentials if conflicting profiles exist. Run `granted settings export-suffix set` to set one. Set to empty string to supress this warning")
-			} else if *cfg.ExportCredentialSuffix != "" {
-				profileName = profile.Name + "-" + *cfg.ExportCredentialSuffix
-			} else {
-				profileName = profile.Name
+			profileName := exportProfileName
+			if applyExportSuffix {
+				if cfg.ExportCredentialSuffix == nil {
+					profileName = profile.Name
+					clio.Warn("No credential suffix found. This can cause issues with using exported credentials if conflicting profiles exist. Run `granted settings export-suffix set` to set one. Set to empty string to supress this warning")
+				} else if *cfg.ExportCredentialSuffix != "" {
+					profileName = profile.Name + "-" + *cfg.ExportCredentialSuffix
+				} else {
+					profileName = profile.Name
+				}
 			}
 
 			credentialsFilePath := cfaws.GetAWSCredentialsPath()
