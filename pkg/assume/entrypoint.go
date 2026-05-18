@@ -27,6 +27,7 @@ func GlobalFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "terminal", Aliases: []string{"t"}, Usage: "Use this with '-c' to open a console session and export credentials into the terminal at the same time."},
 		&cli.BoolFlag{Name: "env", Aliases: []string{"e"}, Usage: "Export credentials to a .env file"},
 		&cli.BoolFlag{Name: "export", Aliases: []string{"ex"}, Usage: "Export credentials to a ~/.aws/credentials file"},
+		&cli.StringFlag{Name: "export-as", Usage: "Export credentials to ~/.aws/credentials using a custom profile name"},
 		&cli.BoolFlag{Name: "export-sso-token", Aliases: []string{"es"}, Usage: "Export sso token to ~/.aws/sso/cache"},
 		&cli.BoolFlag{Name: "unset", Aliases: []string{"un"}, Usage: "Unset all environment variables configured by Assume"},
 		&cli.BoolFlag{Name: "url", Aliases: []string{"u"}, Usage: "Get an active console session url"},
