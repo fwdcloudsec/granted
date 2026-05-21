@@ -19,7 +19,12 @@ func ExportCredsToProfile(profileName string, creds aws.Credentials) error {
 	// create it if it doesn't exist
 	if _, err := os.Stat(credPath); os.IsNotExist(err) {
 
-		f, err := os.Create(credPath)
+		// CWE-732 hardening: create the AWS credentials file with mode
+		// 0o600 (owner read/write only). os.Create uses umask-default
+		// (0o644 on standard Linux / macOS installs), which leaves the
+		// file world-readable. AWS credentials must be 0o600 minimum —
+		// aws-cli itself creates this file at 0o600.
+		f, err := os.OpenFile(credPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 		if err != nil {
 			return err
 		}
