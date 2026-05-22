@@ -46,11 +46,7 @@ var SetConfigCommand = cli.Command{
 
 		var selectedFieldName = c.String("setting")
 		if selectedFieldName == "" {
-			p := &survey.Select{
-				Message: "Select the configuration to change",
-				Options: fields,
-			}
-			err = testable.AskOne(p, &selectedFieldName)
+			selectedFieldName, err = testable.Select("Select the configuration to change", fields)
 			if err != nil {
 				return err
 			}

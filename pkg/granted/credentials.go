@@ -274,8 +274,7 @@ var UpdateCredentialsCommand = cli.Command{
 				fmt.Println("No credentials in secure storage")
 				return nil
 			}
-			in := survey.Select{Message: "Profile Name:", Options: profileNames}
-			err = testable.AskOne(&in, &profileName)
+			profileName, err = testable.Select("Profile Name:", profileNames)
 			if err != nil {
 				return err
 			}
@@ -357,8 +356,7 @@ var RemoveCredentialsCommand = cli.Command{
 				return nil
 			}
 			if profileName == "" {
-				in := survey.Select{Message: "Profile Name:", Options: secureProfileKeys}
-				err = testable.AskOne(&in, &profileName)
+				profileName, err = testable.Select("Profile Name:", secureProfileKeys)
 				if err != nil {
 					return err
 				}
@@ -434,8 +432,7 @@ var ExportCredentialsCommand = cli.Command{
 			}
 
 			if profileName == "" {
-				in := survey.Select{Message: "Profile Name:", Options: secureProfileKeys}
-				err = testable.AskOne(&in, &profileName)
+				profileName, err = testable.Select("Profile Name:", secureProfileKeys)
 				if err != nil {
 					return err
 				}
@@ -537,8 +534,7 @@ var RotateCredentialsCommand = cli.Command{
 				fmt.Println("No credentials in secure storage")
 				return nil
 			}
-			in := survey.Select{Message: "Profile Name:", Options: profileNames}
-			err = testable.AskOne(&in, &profileName)
+			profileName, err = testable.Select("Profile Name:", profileNames)
 			if err != nil {
 				return err
 			}

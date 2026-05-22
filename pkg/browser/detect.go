@@ -47,14 +47,11 @@ func UserHasDefaultBrowser(ctx *cli.Context) (bool, error) {
 func HandleManualBrowserSelection() (string, error) {
 	// didn't find it, request manual input
 
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-	in := survey.Select{
-		Message: "Select one of the browsers from the list",
-		Options: []string{"Chrome", "Brave", "Edge", "Vivaldi", "Firefox", "Waterfox", "Chromium", "Safari", "Stdout", "FirefoxStdout", "Firefox Developer Edition", "Firefox Nightly", "Arc", "Zen", "Custom"},
-	}
-	var selection string
 	clio.NewLine()
-	err := testable.AskOne(&in, &selection, withStdio)
+	selection, err := testable.Select(
+		"Select one of the browsers from the list",
+		[]string{"Chrome", "Brave", "Edge", "Vivaldi", "Firefox", "Waterfox", "Chromium", "Safari", "Stdout", "FirefoxStdout", "Firefox Developer Edition", "Firefox Nightly", "Arc", "Zen", "Custom"},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -342,14 +339,8 @@ func RunFirefoxExtensionPrompts(browserPath string, browserName string) error {
 
 	label := fmt.Sprintf("Open %s to download the extension?", browserName)
 
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-	in := &survey.Select{
-		Message: label,
-		Options: []string{"Yes", "Already installed", "No"},
-	}
-	var out string
 	clio.NewLine()
-	err := testable.AskOne(in, &out, withStdio)
+	out, err := testable.Select(label, []string{"Yes", "Already installed", "No"})
 	if err != nil {
 		return err
 	}
@@ -376,13 +367,8 @@ func RunFirefoxExtensionPrompts(browserPath string, browserName string) error {
 		return err
 	}
 	time.Sleep(time.Second * 2)
-	confIn := &survey.Confirm{
-		Message: "Type Y to continue once you have installed the extension",
-		Default: true,
-	}
-	var confirm bool
 	clio.NewLine()
-	err = testable.AskOne(confIn, &confirm, withStdio)
+	confirm, err := testable.Confirm("Type Y to continue once you have installed the extension", true)
 	if err != nil {
 		return err
 	}
