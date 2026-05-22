@@ -11,7 +11,6 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/ratelimit"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
@@ -261,8 +260,8 @@ var LoginCommand = cli.Command{
 		ssoStartUrl := c.String("sso-start-url")
 
 		if ssoStartUrl == "" {
-			in1 := survey.Input{Message: "SSO Start URL"}
-			err := testable.AskOne(&in1, &ssoStartUrl)
+			var err error
+			ssoStartUrl, err = testable.Input("SSO Start URL", "")
 			if err != nil {
 				return err
 			}
@@ -292,8 +291,8 @@ var LoginCommand = cli.Command{
 
 			// Fallback to user input
 			if ssoRegion == "" {
-				in2 := survey.Input{Message: "Region"}
-				err := testable.AskOne(&in2, &ssoRegion)
+				var err error
+				ssoRegion, err = testable.Input("Region", "")
 				if err != nil {
 					return err
 				}

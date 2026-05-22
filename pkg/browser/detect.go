@@ -220,7 +220,6 @@ func HandleBrowserWizard(ctx *cli.Context) (string, error) {
 // ConfigureBrowserSelection will verify the existance of the browser executable and promot for a path if it cannot be found
 func ConfigureBrowserSelection(browserName string, path string) error {
 	browserKey := GetBrowserKey(browserName)
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 	title := cases.Title(language.AmericanEnglish)
 	browserTitle := title.String(strings.ToLower(browserKey))
 	// We allow users to configure a custom install path if we cannot detect the installation
@@ -247,9 +246,9 @@ func ConfigureBrowserSelection(browserName string, path string) error {
 				validPath := false
 				for !validPath {
 					// prompt for custom path
-					bpIn := survey.Input{Message: fmt.Sprintf("Please enter the full path to your browser installation for %s:", browserTitle)}
 					clio.NewLine()
-					err := testable.AskOne(&bpIn, &customBrowserPath, withStdio)
+					var err error
+					customBrowserPath, err = testable.Input(fmt.Sprintf("Please enter the full path to your browser installation for %s:", browserTitle), "")
 					if err != nil {
 						return err
 					}
@@ -387,7 +386,6 @@ func AskAndGetBrowserPath() (string, error) {
 	}
 
 	browserKey := GetBrowserKey(outcome)
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 	title := cases.Title(language.AmericanEnglish)
 	browserTitle := title.String(strings.ToLower(browserKey))
 	// We allow users to configure a custom install path is we cannot detect the installation
@@ -402,9 +400,9 @@ func AskAndGetBrowserPath() (string, error) {
 			validPath := false
 			for !validPath {
 				// prompt for custom path
-				bpIn := survey.Input{Message: fmt.Sprintf("Please enter the full path to your browser installation for %s:", browserTitle)}
 				clio.NewLine()
-				err := testable.AskOne(&bpIn, &customBrowserPath, withStdio)
+				var err error
+				customBrowserPath, err = testable.Input(fmt.Sprintf("Please enter the full path to your browser installation for %s:", browserTitle), "")
 				if err != nil {
 					return "", err
 				}

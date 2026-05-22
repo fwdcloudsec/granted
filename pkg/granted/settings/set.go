@@ -83,11 +83,7 @@ var SetConfigCommand = cli.Command{
 		case reflect.String:
 			if !c.IsSet("value") {
 				var str string
-				prompt = &survey.Input{
-					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
-					Default: selectedField.Value().(string),
-				}
-				err = testable.AskOne(prompt, &str)
+				str, err = testable.Input(fmt.Sprintf("Enter new value for %s:", selectedFieldName), selectedField.Value().(string))
 				if err != nil {
 					return err
 				}
@@ -97,14 +93,12 @@ var SetConfigCommand = cli.Command{
 			}
 		case reflect.Int:
 			if !c.IsSet("value") {
-				prompt = &survey.Input{
-					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
-					Default: fmt.Sprintf("%v", selectedField.Value()),
-				}
-				err = testable.AskOne(prompt, &value)
+				var str string
+				str, err = testable.Input(fmt.Sprintf("Enter new value for %s:", selectedFieldName), fmt.Sprintf("%v", selectedField.Value()))
 				if err != nil {
 					return err
 				}
+				value = str
 			} else {
 				valueInt := c.String("value")
 				value, err = strconv.Atoi(valueInt)

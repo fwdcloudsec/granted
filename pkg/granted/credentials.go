@@ -244,8 +244,7 @@ var ImportCredentialsCommand = cli.Command{
 }
 
 func promptCredentials() (credentials aws.Credentials, err error) {
-	in1 := survey.Input{Message: "Access Key ID:"}
-	err = testable.AskOne(&in1, &credentials.AccessKeyID)
+	credentials.AccessKeyID, err = testable.Input("Access Key ID:", "")
 	if err != nil {
 		return
 	}
