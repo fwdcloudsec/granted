@@ -1,6 +1,7 @@
 package testable
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,8 +16,18 @@ import (
 type Prompter interface {
 	Confirm(message string, defaultValue bool) (bool, error)
 	Select(message string, options []string) (string, error)
+	SelectWithValidator(message string, options []string, validate func(string) error) (string, error)
 	Input(message string, defaultValue string) (string, error)
+	InputWithValidator(message, defaultValue string, validate func(string) error) (string, error)
 	Password(message string) (string, error)
+}
+
+// Required is a validator that rejects empty input.
+var Required = func(s string) error {
+	if s == "" {
+		return errors.New("response cannot be empty")
+	}
+	return nil
 }
 
 var (
@@ -44,10 +55,24 @@ func Select(message string, options []string) (string, error) {
 	return defaultPrompter.Select(message, options)
 }
 
+// SelectWithValidator shows a single-choice list that re-prompts until the
+// validator accepts the selection. In testing mode the validator is ignored
+// and one value is consumed from the test input stream.
+func SelectWithValidator(message string, options []string, validate func(string) error) (string, error) {
+	return defaultPrompter.SelectWithValidator(message, options, validate)
+}
+
 // Input shows a free-form text prompt. In testing mode it consumes one value
 // from the input stream configured by WithNextSurveyInputFunc.
 func Input(message string, defaultValue string) (string, error) {
 	return defaultPrompter.Input(message, defaultValue)
+}
+
+// InputWithValidator shows a free-form text prompt that re-prompts until the
+// validator accepts the response. In testing mode the validator is ignored
+// and one value is consumed from the test input stream.
+func InputWithValidator(message, defaultValue string, validate func(string) error) (string, error) {
+	return defaultPrompter.InputWithValidator(message, defaultValue, validate)
 }
 
 // Password shows a masked-input prompt. In testing mode it consumes one value
@@ -79,30 +104,50 @@ func (h *huhPrompter) Confirm(message string, defaultValue bool) (bool, error) {
 }
 
 func (h *huhPrompter) Select(message string, options []string) (string, error) {
+	return h.selectWith(message, options, nil)
+}
+
+func (h *huhPrompter) SelectWithValidator(message string, options []string, validate func(string) error) (string, error) {
+	return h.selectWith(message, options, validate)
+}
+
+func (h *huhPrompter) selectWith(message string, options []string, validate func(string) error) (string, error) {
 	if isTesting {
 		return testInputAsString(), nil
 	}
 	var ans string
+	sel := huh.NewSelect[string]().
+		Title(message).
+		Options(huh.NewOptions(options...)...).
+		Value(&ans)
+	if validate != nil {
+		sel = sel.Validate(validate)
+	}
 	err := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title(message).
-				Options(huh.NewOptions(options...)...).
-				Value(&ans),
-		),
+		huh.NewGroup(sel),
 	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
 	return ans, err
 }
 
 func (h *huhPrompter) Input(message string, defaultValue string) (string, error) {
+	return h.inputWith(message, defaultValue, nil)
+}
+
+func (h *huhPrompter) InputWithValidator(message, defaultValue string, validate func(string) error) (string, error) {
+	return h.inputWith(message, defaultValue, validate)
+}
+
+func (h *huhPrompter) inputWith(message, defaultValue string, validate func(string) error) (string, error) {
 	if isTesting {
 		return testInputAsString(), nil
 	}
 	ans := defaultValue
+	in := huh.NewInput().Title(message).Value(&ans)
+	if validate != nil {
+		in = in.Validate(validate)
+	}
 	err := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().Title(message).Value(&ans),
-		),
+		huh.NewGroup(in),
 	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
 	return ans, err
 }
