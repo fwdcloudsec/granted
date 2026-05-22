@@ -5,7 +5,6 @@ import (
 
 	"os"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/testable"
@@ -15,10 +14,8 @@ import (
 // WriteCredentialsToDotenv will check if a .env file exists and prompt to create one if it does not.
 // After the file exists, it will be opened, credentaisl added and then written to disc
 func WriteCredentialsToDotenv(region string, creds aws.Credentials) error {
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 	if _, err := os.Stat("./.env"); os.IsNotExist(err) {
-		ans := false
-		err = testable.AskOne(&survey.Confirm{Message: "No .env file found in the current directory, would you like to create one?"}, &ans, withStdio)
+		ans, err := testable.Confirm("No .env file found in the current directory, would you like to create one?", false)
 		if err != nil {
 			return err
 		}
