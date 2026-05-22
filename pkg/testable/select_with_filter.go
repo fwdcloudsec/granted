@@ -115,9 +115,12 @@ func (h *huhPrompter) SelectWithFilter(message string, options []string, filter 
 		}
 	}
 
+	applyDelegateStyles(&delegate)
+
 	l := list.New(items, delegate, 80, 18)
 	l.Title = message
 	l.SetFilteringEnabled(true)
+	applyListStyles(&l)
 	// Replace bubbles/list's default keymap with bindings that match what our
 	// Update method actually wires up; otherwise the help row advertises `/`
 	// filter, `q` quit, and j/k vim navigation that don't apply here.

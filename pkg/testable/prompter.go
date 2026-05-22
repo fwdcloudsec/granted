@@ -122,7 +122,7 @@ func (h *huhPrompter) confirmWith(message string, defaultValue bool, help string
 	}
 	err := huh.NewForm(
 		huh.NewGroup(field),
-	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
+	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).WithTheme(huhThemeOpt).Run()
 	return ans, err
 }
 
@@ -148,7 +148,7 @@ func (h *huhPrompter) selectWith(message string, options []string, validate func
 	}
 	err := huh.NewForm(
 		huh.NewGroup(sel),
-	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
+	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).WithTheme(huhThemeOpt).Run()
 	return ans, err
 }
 
@@ -178,7 +178,7 @@ func (h *huhPrompter) inputWith(message, defaultValue, help string, validate fun
 	}
 	err := huh.NewForm(
 		huh.NewGroup(in),
-	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
+	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).WithTheme(huhThemeOpt).Run()
 	return ans, err
 }
 
@@ -191,7 +191,7 @@ func (h *huhPrompter) Password(message string) (string, error) {
 		huh.NewGroup(
 			huh.NewInput().Title(message).EchoMode(huh.EchoModePassword).Value(&ans),
 		),
-	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
+	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).WithTheme(huhThemeOpt).Run()
 	return ans, err
 }
 
