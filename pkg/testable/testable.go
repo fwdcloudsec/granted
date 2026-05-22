@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"io"
 	"testing"
-
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/AlecAivazis/survey/v2/core"
 )
 
 var isTesting = false
@@ -46,29 +43,6 @@ func NextFuncFromSlice(t *testing.T, inputs SurveyInputs, position *int) func() 
 		position = &i
 		return v
 	}
-}
-
-// AskOne is a function which can be used to intercept surveys in the cli and replace the survey with input from a test input stream
-// NextSurveyInput should be set to a function which returns the next string to satisfy the input
-func AskOne(in survey.Prompt, out interface{}, opts ...survey.AskOpt) error {
-	if isTesting {
-		return core.WriteAnswer(out, "", nextSurveyInput())
-	}
-	return survey.AskOne(in, out, opts...)
-}
-
-// Ask is the multi-question counterpart to AskOne. In testing mode it consumes
-// one input from the test stream per question, keyed by the question's name.
-func Ask(qs []*survey.Question, response interface{}, opts ...survey.AskOpt) error {
-	if isTesting {
-		for _, q := range qs {
-			if err := core.WriteAnswer(response, q.Name, nextSurveyInput()); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	return survey.Ask(qs, response, opts...)
 }
 
 func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error) {
