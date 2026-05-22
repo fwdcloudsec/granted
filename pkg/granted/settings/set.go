@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	"github.com/common-fate/grab"
 	"github.com/fwdcloudsec/granted/pkg/config"
@@ -59,19 +58,16 @@ var SetConfigCommand = cli.Command{
 		}
 		// Prompt the user to update the field
 		var value interface{}
-		var prompt survey.Prompt
 
 		switch selectedField.Kind() {
 		case reflect.Bool:
 			if !c.IsSet("value") {
-				prompt = &survey.Confirm{
-					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
-					Default: selectedField.Value().(bool),
-				}
-				err = testable.AskOne(prompt, &value)
+				var b bool
+				b, err = testable.Confirm(fmt.Sprintf("Enter new value for %s:", selectedFieldName), selectedField.Value().(bool))
 				if err != nil {
 					return err
 				}
+				value = b
 			} else {
 				valueStr := c.String("value")
 				value, err = strconv.ParseBool(valueStr)

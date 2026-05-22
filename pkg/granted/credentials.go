@@ -248,8 +248,7 @@ func promptCredentials() (credentials aws.Credentials, err error) {
 	if err != nil {
 		return
 	}
-	in2 := survey.Password{Message: "Secret Access Key:"}
-	err = testable.AskOne(&in2, &credentials.SecretAccessKey)
+	credentials.SecretAccessKey, err = testable.Password("Secret Access Key:")
 	if err != nil {
 		return
 	}
@@ -368,12 +367,7 @@ This command will remove a profile with the same name from the AWS config file i
 If you have already used 'granted credentials export-plaintext <profile name>' to export the credentials, the profile will not be removed by this command.
 
 `)
-		var confirm bool
-		s := &survey.Confirm{
-			Message: "Are you sure you want to remove these credentials and profile from your AWS config?",
-			Default: true,
-		}
-		err = testable.AskOne(s, &confirm)
+		confirm, err := testable.Confirm("Are you sure you want to remove these credentials and profile from your AWS config?", true)
 		if err != nil {
 			return err
 		}

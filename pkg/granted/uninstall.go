@@ -3,7 +3,6 @@ package granted
 import (
 	"os"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/alias"
 	"github.com/fwdcloudsec/granted/pkg/config"
@@ -15,13 +14,7 @@ var UninstallCommand = cli.Command{
 	Name:  "uninstall",
 	Usage: "Remove all Granted configuration",
 	Action: func(c *cli.Context) error {
-		withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-		in := &survey.Confirm{
-			Message: "Are you sure you want to remove your Granted config?",
-			Default: true,
-		}
-		var confirm bool
-		err := testable.AskOne(in, &confirm, withStdio)
+		confirm, err := testable.Confirm("Are you sure you want to remove your Granted config?", true)
 		if err != nil {
 			return err
 		}
