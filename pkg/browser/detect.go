@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/testable"
@@ -294,14 +293,11 @@ func GrantedIntroduction() {
 }
 
 func SSOBrowser(grantedDefaultBrowser string) error {
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-	in := &survey.Confirm{
-		Message: "Use a different browser than your default browser for SSO login?",
-		Default: false,
-		Help:    "For example, if you normally use a password manager in Chrome for your AWS login but Chrome is not your default browser, you would choose to use Chrome for SSO logins. You can change this later by running 'granted browser set-sso'",
-	}
-	var confirm bool
-	err := testable.AskOne(in, &confirm, withStdio)
+	confirm, err := testable.ConfirmWithHelp(
+		"Use a different browser than your default browser for SSO login?",
+		false,
+		"For example, if you normally use a password manager in Chrome for your AWS login but Chrome is not your default browser, you would choose to use Chrome for SSO logins. You can change this later by running 'granted browser set-sso'",
+	)
 	if err != nil {
 		return err
 	}
