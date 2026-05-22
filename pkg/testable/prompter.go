@@ -15,11 +15,13 @@ import (
 // by default because granted's stdout is shell-evaluated.
 type Prompter interface {
 	Confirm(message string, defaultValue bool) (bool, error)
+	ConfirmWithHelp(message string, defaultValue bool, help string) (bool, error)
 	Select(message string, options []string) (string, error)
 	SelectWithValidator(message string, options []string, validate func(string) error) (string, error)
 	SelectWithFilter(message string, options []string, filter func(term, option string) bool) (string, error)
 	Input(message string, defaultValue string) (string, error)
 	InputWithValidator(message, defaultValue string, validate func(string) error) (string, error)
+	InputWithHelp(message, defaultValue, help string) (string, error)
 	Password(message string) (string, error)
 }
 
@@ -50,6 +52,11 @@ func Confirm(message string, defaultValue bool) (bool, error) {
 	return defaultPrompter.Confirm(message, defaultValue)
 }
 
+// ConfirmWithHelp is Confirm with a help string shown below the title.
+func ConfirmWithHelp(message string, defaultValue bool, help string) (bool, error) {
+	return defaultPrompter.ConfirmWithHelp(message, defaultValue, help)
+}
+
 // Select shows a single-choice list. In testing mode it consumes one value
 // from the input stream configured by WithNextSurveyInputFunc.
 func Select(message string, options []string) (string, error) {
@@ -76,6 +83,11 @@ func InputWithValidator(message, defaultValue string, validate func(string) erro
 	return defaultPrompter.InputWithValidator(message, defaultValue, validate)
 }
 
+// InputWithHelp is Input with a help string shown below the title.
+func InputWithHelp(message, defaultValue, help string) (string, error) {
+	return defaultPrompter.InputWithHelp(message, defaultValue, help)
+}
+
 // Password shows a masked-input prompt. In testing mode it consumes one value
 // from the input stream configured by WithNextSurveyInputFunc.
 func Password(message string) (string, error) {
@@ -92,14 +104,24 @@ func newHuhPrompter() *huhPrompter {
 }
 
 func (h *huhPrompter) Confirm(message string, defaultValue bool) (bool, error) {
+	return h.confirmWith(message, defaultValue, "")
+}
+
+func (h *huhPrompter) ConfirmWithHelp(message string, defaultValue bool, help string) (bool, error) {
+	return h.confirmWith(message, defaultValue, help)
+}
+
+func (h *huhPrompter) confirmWith(message string, defaultValue bool, help string) (bool, error) {
 	if isTesting {
 		return testInputAsBool()
 	}
 	ans := defaultValue
+	field := huh.NewConfirm().Title(message).Value(&ans)
+	if help != "" {
+		field = field.Description(help)
+	}
 	err := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().Title(message).Value(&ans),
-		),
+		huh.NewGroup(field),
 	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
 	return ans, err
 }
@@ -131,19 +153,26 @@ func (h *huhPrompter) selectWith(message string, options []string, validate func
 }
 
 func (h *huhPrompter) Input(message string, defaultValue string) (string, error) {
-	return h.inputWith(message, defaultValue, nil)
+	return h.inputWith(message, defaultValue, "", nil)
 }
 
 func (h *huhPrompter) InputWithValidator(message, defaultValue string, validate func(string) error) (string, error) {
-	return h.inputWith(message, defaultValue, validate)
+	return h.inputWith(message, defaultValue, "", validate)
 }
 
-func (h *huhPrompter) inputWith(message, defaultValue string, validate func(string) error) (string, error) {
+func (h *huhPrompter) InputWithHelp(message, defaultValue, help string) (string, error) {
+	return h.inputWith(message, defaultValue, help, nil)
+}
+
+func (h *huhPrompter) inputWith(message, defaultValue, help string, validate func(string) error) (string, error) {
 	if isTesting {
 		return testInputAsString(), nil
 	}
 	ans := defaultValue
 	in := huh.NewInput().Title(message).Value(&ans)
+	if help != "" {
+		in = in.Description(help)
+	}
 	if validate != nil {
 		in = in.Validate(validate)
 	}
