@@ -6,8 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -35,8 +33,8 @@ var AddCredentialsCommand = cli.Command{
 	Action: func(c *cli.Context) error {
 		profileName := c.Args().First()
 		if profileName == "" {
-			in := survey.Input{Message: "Profile Name:"}
-			err := testable.AskOne(&in, &profileName, survey.WithValidator(survey.MinLength(1)))
+			var err error
+			profileName, err = testable.InputWithValidator("Profile Name:", "", testable.Required)
 			if err != nil {
 				return err
 			}
@@ -150,12 +148,11 @@ var ImportCredentialsCommand = cli.Command{
 		}
 
 		if profileName == "" {
-			in := survey.Select{Message: "Profile Name:", Options: profiles.ProfileNames}
-			err := testable.AskOne(&in, &profileName, survey.WithValidator(func(ans interface{}) error {
-				option := ans.(core.OptionAnswer)
-				// Not all profiles are valid for importing, so ensure this profile is suitable, and inform the user if it is not + the reason
-				return validateProfileForImport(c.Context, profiles, option.Value, c.Bool("overwrite"))
-			}))
+			// Not all profiles are valid for importing, so the validator ensures this profile
+			// is suitable, and informs the user if it is not + the reason
+			profileName, err = testable.SelectWithValidator("Profile Name:", profiles.ProfileNames, func(s string) error {
+				return validateProfileForImport(c.Context, profiles, s, c.Bool("overwrite"))
+			})
 			if err != nil {
 				return err
 			}

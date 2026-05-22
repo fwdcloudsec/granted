@@ -6,7 +6,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/testable"
@@ -64,7 +63,6 @@ func (c ConfigYAML) PromptRequiredKeys(passedKeys []string, interactive bool, re
 		for fieldName, values := range v {
 			if isRequiredKey(values) {
 
-				var questions []*survey.Question
 				if len(passedKeys) != 0 {
 					for _, val := range passedKeys {
 						key, value, err := formatKey(val)
@@ -114,31 +112,16 @@ func (c ConfigYAML) PromptRequiredKeys(passedKeys []string, interactive bool, re
 					}
 				}
 
-				withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-
-				qs := survey.Question{
-					Name:     fieldName,
-					Prompt:   &survey.Input{Message: fmt.Sprintf("'%s': %s", fieldName, prompt)},
-					Validate: survey.Required}
-
-				questions = append(questions, &qs)
-				ansmap := make(map[string]interface{})
-
-				if len(questions) > 0 {
-					clio.Info("Your Profile Registry requires you to input values for the following keys:")
-
-					err = testable.Ask(questions, &ansmap, withStdio)
-					if err != nil {
-						return err
-					}
-
-					err = SaveKeys(gConf, ansmap)
-					if err != nil {
-						return err
-					}
-
-					break
+				clio.Info("Your Profile Registry requires you to input values for the following keys:")
+				value, err := testable.InputWithValidator(fmt.Sprintf("'%s': %s", fieldName, prompt), "", testable.Required)
+				if err != nil {
+					return err
 				}
+				err = SaveKey(gConf, fieldName, value)
+				if err != nil {
+					return err
+				}
+				break
 
 			} else {
 				// for all other variables add them to registry as variables
@@ -168,27 +151,7 @@ func (c ConfigYAML) PromptRequiredKeys(passedKeys []string, interactive bool, re
 	return nil
 }
 
-// This is used when user enters the required key through cli prompts.
-func SaveKeys(gConf *grantedConfig.Config, ansmap map[string]interface{}) error {
-	for k, v := range ansmap {
-		if len(gConf.ProfileRegistry.RequiredKeys) == 0 {
-			var requiredKeys = make(map[string]string)
-			requiredKeys[k] = v.(string)
-			gConf.ProfileRegistry.RequiredKeys = requiredKeys
-		} else {
-			gConf.ProfileRegistry.RequiredKeys[k] = v.(string)
-		}
-	}
-
-	err := gConf.Save()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// This is used when user passed the required value through flag.
+// SaveKey persists a single required-key value to the granted config.
 func SaveKey(gConf *grantedConfig.Config, key string, value string) error {
 	if len(gConf.ProfileRegistry.RequiredKeys) == 0 {
 		var requiredKeys = make(map[string]string)
