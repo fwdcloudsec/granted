@@ -16,6 +16,7 @@ type Prompter interface {
 	Confirm(message string, defaultValue bool) (bool, error)
 	Select(message string, options []string) (string, error)
 	Input(message string, defaultValue string) (string, error)
+	Password(message string) (string, error)
 }
 
 var (
@@ -47,6 +48,12 @@ func Select(message string, options []string) (string, error) {
 // from the input stream configured by WithNextSurveyInputFunc.
 func Input(message string, defaultValue string) (string, error) {
 	return defaultPrompter.Input(message, defaultValue)
+}
+
+// Password shows a masked-input prompt. In testing mode it consumes one value
+// from the input stream configured by WithNextSurveyInputFunc.
+func Password(message string) (string, error) {
+	return defaultPrompter.Password(message)
 }
 
 type huhPrompter struct {
@@ -95,6 +102,19 @@ func (h *huhPrompter) Input(message string, defaultValue string) (string, error)
 	err := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().Title(message).Value(&ans),
+		),
+	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
+	return ans, err
+}
+
+func (h *huhPrompter) Password(message string) (string, error) {
+	if isTesting {
+		return testInputAsString(), nil
+	}
+	var ans string
+	err := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().Title(message).EchoMode(huh.EchoModePassword).Value(&ans),
 		),
 	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
 	return ans, err
