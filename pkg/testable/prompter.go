@@ -17,6 +17,7 @@ type Prompter interface {
 	Confirm(message string, defaultValue bool) (bool, error)
 	Select(message string, options []string) (string, error)
 	SelectWithValidator(message string, options []string, validate func(string) error) (string, error)
+	SelectWithFilter(message string, options []string, filter func(term, option string) bool) (string, error)
 	Input(message string, defaultValue string) (string, error)
 	InputWithValidator(message, defaultValue string, validate func(string) error) (string, error)
 	Password(message string) (string, error)
