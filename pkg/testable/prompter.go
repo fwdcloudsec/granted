@@ -14,6 +14,7 @@ import (
 // by default because granted's stdout is shell-evaluated.
 type Prompter interface {
 	Confirm(message string, defaultValue bool) (bool, error)
+	Select(message string, options []string) (string, error)
 }
 
 var (
@@ -33,6 +34,12 @@ func init() {
 // from the input stream configured by WithNextSurveyInputFunc.
 func Confirm(message string, defaultValue bool) (bool, error) {
 	return defaultPrompter.Confirm(message, defaultValue)
+}
+
+// Select shows a single-choice list. In testing mode it consumes one value
+// from the input stream configured by WithNextSurveyInputFunc.
+func Select(message string, options []string) (string, error) {
+	return defaultPrompter.Select(message, options)
 }
 
 type huhPrompter struct {
@@ -55,6 +62,30 @@ func (h *huhPrompter) Confirm(message string, defaultValue bool) (bool, error) {
 		),
 	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
 	return ans, err
+}
+
+func (h *huhPrompter) Select(message string, options []string) (string, error) {
+	if isTesting {
+		return testInputAsString(), nil
+	}
+	var ans string
+	err := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title(message).
+				Options(huh.NewOptions(options...)...).
+				Value(&ans),
+		),
+	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
+	return ans, err
+}
+
+func testInputAsString() string {
+	v := nextSurveyInput()
+	if v == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v", v)
 }
 
 func testInputAsBool() (bool, error) {
