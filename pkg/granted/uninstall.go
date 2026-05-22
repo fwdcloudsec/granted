@@ -7,6 +7,7 @@ import (
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/alias"
 	"github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/urfave/cli/v2"
 )
 
@@ -20,7 +21,7 @@ var UninstallCommand = cli.Command{
 			Default: true,
 		}
 		var confirm bool
-		err := survey.AskOne(in, &confirm, withStdio)
+		err := testable.AskOne(in, &confirm, withStdio)
 		if err != nil {
 			return err
 		}

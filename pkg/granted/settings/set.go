@@ -9,6 +9,7 @@ import (
 	"github.com/common-fate/clio"
 	"github.com/common-fate/grab"
 	"github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/urfave/cli/v2"
 )
 
@@ -49,7 +50,7 @@ var SetConfigCommand = cli.Command{
 				Message: "Select the configuration to change",
 				Options: fields,
 			}
-			err = survey.AskOne(p, &selectedFieldName)
+			err = testable.AskOne(p, &selectedFieldName)
 			if err != nil {
 				return err
 			}
@@ -71,7 +72,7 @@ var SetConfigCommand = cli.Command{
 					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
 					Default: selectedField.Value().(bool),
 				}
-				err = survey.AskOne(prompt, &value)
+				err = testable.AskOne(prompt, &value)
 				if err != nil {
 					return err
 				}
@@ -90,7 +91,7 @@ var SetConfigCommand = cli.Command{
 					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
 					Default: selectedField.Value().(string),
 				}
-				err = survey.AskOne(prompt, &str)
+				err = testable.AskOne(prompt, &str)
 				if err != nil {
 					return err
 				}
@@ -104,7 +105,7 @@ var SetConfigCommand = cli.Command{
 					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
 					Default: fmt.Sprintf("%v", selectedField.Value()),
 				}
-				err = survey.AskOne(prompt, &value)
+				err = testable.AskOne(prompt, &value)
 				if err != nil {
 					return err
 				}

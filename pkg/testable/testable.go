@@ -57,6 +57,20 @@ func AskOne(in survey.Prompt, out interface{}, opts ...survey.AskOpt) error {
 	return survey.AskOne(in, out, opts...)
 }
 
+// Ask is the multi-question counterpart to AskOne. In testing mode it consumes
+// one input from the test stream per question, keyed by the question's name.
+func Ask(qs []*survey.Question, response interface{}, opts ...survey.AskOpt) error {
+	if isTesting {
+		for _, q := range qs {
+			if err := core.WriteAnswer(response, q.Name, nextSurveyInput()); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return survey.Ask(qs, response, opts...)
+}
+
 func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error) {
 	if isTesting {
 		validateNextOutput(format, a...)

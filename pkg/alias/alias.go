@@ -18,6 +18,7 @@ import (
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/internal/build"
 	"github.com/fwdcloudsec/granted/pkg/shells"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/fatih/color"
 )
 
@@ -203,7 +204,7 @@ func SetupShellWizard(autoConfigure bool) error {
 			Default: true,
 		}
 		var confirm bool
-		err = survey.AskOne(in, &confirm, withStdio)
+		err = testable.AskOne(in, &confirm, withStdio)
 		if err != nil {
 			return err
 		}

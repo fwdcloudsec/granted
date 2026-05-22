@@ -376,7 +376,7 @@ If you have already used 'granted credentials export-plaintext <profile name>' t
 			Message: "Are you sure you want to remove these credentials and profile from your AWS config?",
 			Default: true,
 		}
-		err = survey.AskOne(s, &confirm)
+		err = testable.AskOne(s, &confirm)
 		if err != nil {
 			return err
 		}

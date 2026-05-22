@@ -7,6 +7,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )
@@ -28,7 +29,7 @@ var setRequestURLCommand = cli.Command{
 				Help:    "URL for your Common Fate dashboard from where users can request access \n for e.g: https://example.com",
 			}
 			withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-			err := survey.AskOne(in, &approvalsURL, withStdio)
+			err := testable.AskOne(in, &approvalsURL, withStdio)
 			if err != nil {
 				return err
 			}

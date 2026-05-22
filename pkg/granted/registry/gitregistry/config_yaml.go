@@ -9,6 +9,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"gopkg.in/yaml.v3"
 )
 
@@ -126,7 +127,7 @@ func (c ConfigYAML) PromptRequiredKeys(passedKeys []string, interactive bool, re
 				if len(questions) > 0 {
 					clio.Info("Your Profile Registry requires you to input values for the following keys:")
 
-					err = survey.Ask(questions, &ansmap, withStdio)
+					err = testable.Ask(questions, &ansmap, withStdio)
 					if err != nil {
 						return err
 					}

@@ -8,6 +8,7 @@ import (
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/clierr"
 	"github.com/fwdcloudsec/granted/pkg/git"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 
 	"github.com/urfave/cli/v2"
 )
@@ -44,7 +45,7 @@ var SetupCommand = cli.Command{
 			Message: "Are you sure you want to copy all of the profiles from your AWS config file?",
 			Default: true,
 		}
-		err = survey.AskOne(s, &confirm)
+		err = testable.AskOne(s, &confirm)
 		if err != nil {
 			return err
 		}
