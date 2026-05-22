@@ -15,6 +15,7 @@ import (
 type Prompter interface {
 	Confirm(message string, defaultValue bool) (bool, error)
 	Select(message string, options []string) (string, error)
+	Input(message string, defaultValue string) (string, error)
 }
 
 var (
@@ -40,6 +41,12 @@ func Confirm(message string, defaultValue bool) (bool, error) {
 // from the input stream configured by WithNextSurveyInputFunc.
 func Select(message string, options []string) (string, error) {
 	return defaultPrompter.Select(message, options)
+}
+
+// Input shows a free-form text prompt. In testing mode it consumes one value
+// from the input stream configured by WithNextSurveyInputFunc.
+func Input(message string, defaultValue string) (string, error) {
+	return defaultPrompter.Input(message, defaultValue)
 }
 
 type huhPrompter struct {
@@ -75,6 +82,19 @@ func (h *huhPrompter) Select(message string, options []string) (string, error) {
 				Title(message).
 				Options(huh.NewOptions(options...)...).
 				Value(&ans),
+		),
+	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
+	return ans, err
+}
+
+func (h *huhPrompter) Input(message string, defaultValue string) (string, error) {
+	if isTesting {
+		return testInputAsString(), nil
+	}
+	ans := defaultValue
+	err := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().Title(message).Value(&ans),
 		),
 	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).Run()
 	return ans, err
