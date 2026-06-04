@@ -66,7 +66,7 @@ var SafariPathMac = []string{"/Applications/Safari.app/Contents/MacOS/Safari"}
 
 var ArcPathMac = []string{"/Applications/Arc.app/Contents/MacOS/Arc"}
 
-var ZenPathMac = []string{"/Applications/Zen Browser.app/Contents/MacOS/zen"}
+var ZenPathMac = []string{"/Applications/Zen.app/Contents/MacOS/zen", "/Applications/Zen Browser.app/Contents/MacOS/zen"}
 var ZenPathLinux = []string{`/usr/bin/zen-browser`, `/opt/zen-browser/zen`}
 var ZenPathWindows = []string{`\Program Files\Zen Browser\zen.exe`}
 
