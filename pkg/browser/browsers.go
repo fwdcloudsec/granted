@@ -19,6 +19,7 @@ const (
 	FirefoxStdoutKey     string = "FIREFOX_STDOUT"
 	ArcKey               string = "ARC"
 	ZenKey               string = "ZEN"
+	HeliumKey            string = "HELIUM"
 	FirefoxDevEditionKey string = "FIREFOX_DEV"
 	FirefoxNightlyKey    string = "FIREFOX_NIGHTLY"
 	CustomKey            string = "CUSTOM"
@@ -65,6 +66,8 @@ var VivaldiPathWindows = []string{`\Program Files\Vivaldi\Application\vivaldi.ex
 var SafariPathMac = []string{"/Applications/Safari.app/Contents/MacOS/Safari"}
 
 var ArcPathMac = []string{"/Applications/Arc.app/Contents/MacOS/Arc"}
+
+var HeliumPathMac = []string{"/Applications/Helium.app/Contents/MacOS/Helium"}
 
 var ZenPathMac = []string{"/Applications/Zen Browser.app/Contents/MacOS/zen"}
 var ZenPathLinux = []string{`/usr/bin/zen-browser`, `/opt/zen-browser/zen`}
@@ -251,6 +254,15 @@ func ArcPathDefaults() ([]string, error) {
 	switch runtime.GOOS {
 	case "darwin":
 		return ArcPathMac, nil
+	default:
+		return nil, errors.New("os not supported")
+	}
+}
+
+func HeliumPathDefaults() ([]string, error) {
+	switch runtime.GOOS {
+	case "darwin":
+		return HeliumPathMac, nil
 	default:
 		return nil, errors.New("os not supported")
 	}
