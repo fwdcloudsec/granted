@@ -34,6 +34,8 @@ func openBrowser(url string, browserProfile string) error {
 		return openWithCustomPath(config.CustomSSOBrowserPath, url)
 	}
 
+	browser.Stdout = os.Stderr
+	browser.Stderr = os.Stderr
 	return browser.OpenURL(url)
 }
 
