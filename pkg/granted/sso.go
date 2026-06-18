@@ -53,6 +53,7 @@ var GenerateCommand = cli.Command{
 		&cli.StringFlag{Name: "config", Usage: "Specify the SSO config section in the Granted config file ([SSO.name])", Value: "default"},
 		&cli.StringFlag{Name: "prefix", Usage: "Specify a prefix for all generated profile names"},
 		&cli.StringFlag{Name: "sso-region", Usage: "Specify the SSO region"},
+		&cli.StringFlag{Name: "default-region", Usage: "Set the 'region' key on generated profiles (can differ from the SSO region)"},
 		&cli.StringSliceFlag{Name: "source", Usage: "The sources to load AWS profiles from (valid values are: 'aws-sso')", Value: cli.NewStringSlice("aws-sso")},
 		&cli.BoolFlag{Name: "no-credential-process", Usage: "Generate profiles without the Granted credential-process integration"},
 		&cli.StringFlag{Name: "profile-template", Usage: "Specify profile name template", Value: awsconfigfile.DefaultProfileNameTemplate},
@@ -96,6 +97,11 @@ var GenerateCommand = cli.Command{
 		prefix := coalesceString(c.String("prefix"), cfgSSO.Prefix)
 		noCredentialProcess := c.Bool("no-credential-process") || cfgSSO.NoCredentialProcess
 
+		defaultRegion, err := resolveDefaultRegion(c.String("default-region"), cfgSSO.DefaultRegion)
+		if err != nil {
+			return err
+		}
+
 		g := awsconfigfile.Generator{
 			Config:              ini.Empty(),
 			ProfileNameTemplate: profileNameTemplate,
@@ -107,7 +113,7 @@ var GenerateCommand = cli.Command{
 		for _, s := range c.StringSlice("source") {
 			switch s {
 			case "aws-sso":
-				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOBrowserProfile: ssoBrowserProfile, UseDeviceCode: c.Bool("use-device-code")})
+				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, DefaultRegion: defaultRegion, SSOBrowserProfile: ssoBrowserProfile, UseDeviceCode: c.Bool("use-device-code")})
 			case "commonfate", "common-fate", "cf":
 				return fmt.Errorf("the common fate profile source is no longer supported: https://www.commonfate.io/blog/winding-down")
 			default:
@@ -137,6 +143,7 @@ var PopulateCommand = cli.Command{
 		&cli.StringFlag{Name: "config", Usage: "Specify the SSO config section ([SSO.name])", Value: "default"},
 		&cli.StringFlag{Name: "prefix", Usage: "Specify a prefix for all generated profile names"},
 		&cli.StringFlag{Name: "sso-region", Usage: "Specify the SSO region"},
+		&cli.StringFlag{Name: "default-region", Usage: "Set the 'region' key on generated profiles (can differ from the SSO region)"},
 		&cli.StringSliceFlag{Name: "sso-scope", Usage: "Specify the SSO scopes"},
 		&cli.StringSliceFlag{Name: "source", Usage: "The sources to load AWS profiles from", Value: cli.NewStringSlice("aws-sso")},
 		&cli.BoolFlag{Name: "prune", Usage: "Remove any generated profiles with the 'common_fate_generated_from' key which no longer exist"},
@@ -182,6 +189,11 @@ var PopulateCommand = cli.Command{
 		prefix := coalesceString(c.String("prefix"), cfgSSO.Prefix)
 		noCredentialProcess := c.Bool("no-credential-process") || cfgSSO.NoCredentialProcess
 
+		defaultRegion, err := resolveDefaultRegion(c.String("default-region"), cfgSSO.DefaultRegion)
+		if err != nil {
+			return err
+		}
+
 		configFilename := cfaws.GetAWSConfigPath()
 
 		// Create ~/.aws if it does not exists
@@ -224,7 +236,7 @@ var PopulateCommand = cli.Command{
 		for _, s := range c.StringSlice("source") {
 			switch s {
 			case "aws-sso":
-				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, SSOScopes: c.StringSlice("sso-scope"), SSOBrowserProfile: ssoBrowserProfile, UseDeviceCode: c.Bool("use-device-code")})
+				g.AddSource(AWSSSOSource{SSORegion: ssoRegion, StartURL: startURL, DefaultRegion: defaultRegion, SSOScopes: c.StringSlice("sso-scope"), SSOBrowserProfile: ssoBrowserProfile, UseDeviceCode: c.Bool("use-device-code")})
 			case "commonfate", "common-fate", "cf":
 				return fmt.Errorf("the common fate profile source is no longer supported: https://www.commonfate.io/blog/winding-down")
 			default:
@@ -343,6 +355,9 @@ type AWSSSOSource struct {
 	SSOScopes         []string
 	SSOBrowserProfile string
 	UseDeviceCode     bool
+	// DefaultRegion, when set, populates the 'region' key on each generated
+	// profile. It can differ from SSORegion.
+	DefaultRegion string
 }
 
 func (s AWSSSOSource) GetProfiles(ctx context.Context) ([]awsconfigfile.SSOProfile, error) {
@@ -458,6 +473,7 @@ func (s AWSSSOSource) GetProfiles(ctx context.Context) ([]awsconfigfile.SSOProfi
 						ssoProfiles = append(ssoProfiles, awsconfigfile.SSOProfile{
 							SSOStartURL:   s.StartURL,
 							SSORegion:     region,
+							Region:        s.DefaultRegion,
 							AccountID:     *role.AccountId,
 							AccountName:   *account.AccountName,
 							RoleName:      *role.RoleName,
@@ -503,4 +519,20 @@ func coalesceString(s1, s2 string) string {
 		return s1
 	}
 	return s2
+}
+
+// resolveDefaultRegion picks the default region from the flag value, falling
+// back to the config value, and expands any shorthand (e.g. 'ue1' -> 'us-east-1').
+// An empty result means no 'region' key should be written on generated profiles.
+func resolveDefaultRegion(flagValue, configValue string) (string, error) {
+	region := coalesceString(flagValue, configValue)
+	if region == "" {
+		return "", nil
+	}
+
+	expanded, err := cfaws.ExpandRegion(region)
+	if err != nil {
+		return "", fmt.Errorf("couldn't parse default-region %s: %w", region, err)
+	}
+	return expanded, nil
 }
