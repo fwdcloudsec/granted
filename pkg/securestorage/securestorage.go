@@ -135,6 +135,10 @@ func (s *SecureStorage) openKeyring() (keyring.Keyring, error) {
 		FileDir: secureStoragePath,
 
 		FilePasswordFunc: keyring.FixedStringPrompt(os.Getenv("CF_KEYRING_FILE_PASSWORD")),
+
+		// Linux kernel keyring
+		KeyCtlScope: "user",
+		KeyCtlPerm: 0x3f0f0000,
 	}
 
 	// enable debug logging if the verbose flag is set in the CLI
@@ -155,6 +159,12 @@ func (s *SecureStorage) openKeyring() (keyring.Keyring, error) {
 		}
 		if cfg.Keyring.PassDir != nil {
 			c.PassDir = *cfg.Keyring.PassDir
+		}
+		if cfg.Keyring.KeyCtlScope != nil {
+			c.KeyCtlScope = *cfg.Keyring.KeyCtlScope
+		}
+		if cfg.Keyring.KeyCtlPerm != nil {
+			c.KeyCtlPerm = *cfg.Keyring.KeyCtlPerm
 		}
 	}
 
