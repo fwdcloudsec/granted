@@ -95,6 +95,46 @@ func (h *huhPrompter) SelectWithFilter(message string, options []string, filter 
 		return testInputAsString(), nil
 	}
 
+	m := newSelectFilterModel(message, options, filter)
+	p := tea.NewProgram(m, tea.WithInput(h.stdin), tea.WithOutput(h.stdout))
+	final, err := p.Run()
+	if err != nil {
+		return "", err
+	}
+	if m, ok := final.(selectFilterModel); ok {
+		if m.quitting {
+			return "", huh.ErrUserAborted
+		}
+		return m.choice, nil
+	}
+	return "", nil
+}
+
+// rankFilter ranks targets against term using match. An empty term matches
+// everything, preserving order; otherwise only targets that match accepts are
+// returned. This is the pure logic behind the bubbles/list Filter hook, split
+// out so it can be unit-tested without a running program.
+func rankFilter(term string, targets []string, match func(term, option string) bool) []list.Rank {
+	if term == "" {
+		ranks := make([]list.Rank, len(targets))
+		for i := range targets {
+			ranks[i] = list.Rank{Index: i}
+		}
+		return ranks
+	}
+	ranks := []list.Rank{}
+	for i, target := range targets {
+		if match(term, target) {
+			ranks = append(ranks, list.Rank{Index: i})
+		}
+	}
+	return ranks
+}
+
+// newSelectFilterModel builds the bubbles/list-backed model used by
+// SelectWithFilter. It is separated from SelectWithFilter so tests can drive
+// the same model production uses without opening a terminal.
+func newSelectFilterModel(message string, options []string, filter func(term, option string) bool) selectFilterModel {
 	items := make([]list.Item, len(options))
 	for i, o := range options {
 		items[i] = filterItem{value: o}
@@ -137,32 +177,8 @@ func (h *huhPrompter) SelectWithFilter(message string, options []string, filter 
 	l.KeyMap.ShowFullHelp.Unbind()
 	l.KeyMap.CloseFullHelp.Unbind()
 	l.Filter = func(term string, targets []string) []list.Rank {
-		if term == "" {
-			ranks := make([]list.Rank, len(targets))
-			for i := range targets {
-				ranks[i] = list.Rank{Index: i}
-			}
-			return ranks
-		}
-		ranks := []list.Rank{}
-		for i, target := range targets {
-			if filter(term, target) {
-				ranks = append(ranks, list.Rank{Index: i})
-			}
-		}
-		return ranks
+		return rankFilter(term, targets, filter)
 	}
 
-	p := tea.NewProgram(selectFilterModel{list: l}, tea.WithInput(h.stdin), tea.WithOutput(h.stdout))
-	final, err := p.Run()
-	if err != nil {
-		return "", err
-	}
-	if m, ok := final.(selectFilterModel); ok {
-		if m.quitting {
-			return "", huh.ErrUserAborted
-		}
-		return m.choice, nil
-	}
-	return "", nil
+	return selectFilterModel{list: l}
 }
