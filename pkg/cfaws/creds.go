@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -122,9 +121,5 @@ func GetCredentialsCreds(ctx context.Context, c *Profile) (aws.Credentials, erro
 }
 
 func MfaTokenProvider() (string, error) {
-	in := survey.Input{Message: "MFA Token"}
-	var out string
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-	err := testable.AskOne(&in, &out, withStdio)
-	return out, err
+	return testable.Input("MFA Token", "")
 }

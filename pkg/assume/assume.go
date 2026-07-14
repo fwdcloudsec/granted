@@ -13,7 +13,6 @@ import (
 
 	"os"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/alessio/shellescape"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -600,7 +599,7 @@ func EnvKeys(creds aws.Credentials, region string) []string {
 		"AWS_REGION=" + region}
 }
 
-func filterMultiToken(filterValue string, optValue string, optIndex int) bool {
+func filterMultiToken(filterValue, optValue string) bool {
 	optValue = strings.ToLower(optValue)
 	filters := strings.Split(strings.ToLower(filterValue), " ")
 	for _, filter := range filters {
@@ -625,7 +624,6 @@ func printFlagUsage(region, service string) {
 }
 
 func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 	// load config to check frecency enabled
 	cfg, err := config.Load()
 	if err != nil {
@@ -660,40 +658,7 @@ func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
 		profileNameMap[stringKey] = pn
 		profileKeys[i] = stringKey
 	}
-	var promptHeader string
-	// only add the description headers if there are profiles using descriptions
-	if hasDescriptions {
-		promptHeader = fmt.Sprintf(`{{- "  %s\n"}}`, color.New(color.Underline, color.Bold).Sprintf("%-"+strconv.Itoa(longestProfileNameLength)+"s%s", "Profile", "Description"))
-	}
-	// This overrides the default prompt template to add a header row above the options
-	// this should be reset back to the original template after the call to AskOne
-	originalSelectTemplate := survey.SelectQuestionTemplate
-	survey.SelectQuestionTemplate = fmt.Sprintf(`
-{{- define "option"}}
-    {{- if eq .SelectedIndex .CurrentIndex }}{{color .Config.Icons.SelectFocus.Format }}{{ .Config.Icons.SelectFocus.Text }} {{else}}{{color "default"}}  {{end}}
-    {{- .CurrentOpt.Value}}{{ if ne ($.GetDescription .CurrentOpt) "" }} - {{color "cyan"}}{{ $.GetDescription .CurrentOpt }}{{end}}
-    {{- color "reset"}}
-{{end}}
-{{- if .ShowHelp }}{{- color .Config.Icons.Help.Format }}{{ .Config.Icons.Help.Text }} {{ .Help }}{{color "reset"}}{{"\n"}}{{end}}
-{{- color .Config.Icons.Question.Format }}{{ .Config.Icons.Question.Text }} {{color "reset"}}
-{{- color "default+hb"}}{{ .Message }}{{ .FilterMessage }}{{color "reset"}}
-{{- if .ShowAnswer}}{{color "cyan"}} {{.Answer}}{{color "reset"}}{{"\n"}}
-{{- else}}
-  {{- "  "}}{{- color "cyan"}}[Use arrows to move, type to filter{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
-  {{- "\n"}}
-%s{{- "\n"}}
-  {{- range $ix, $option := .PageEntries}}
-    {{- template "option" $.IterateOption $ix $option}}
-  {{- end}}
-{{- end}}`, promptHeader)
 
-	clio.NewLine()
-	// Replicate the logic from original assume fn.
-	in := survey.Select{
-		Message: "Please select the profile you would like to assume:",
-		Options: profileKeys,
-		Filter:  filterMultiToken,
-	}
 	if len(profileKeys) == 0 {
 		return "", clierr.New("Granted couldn't find any AWS profiles in your config file or your credentials file",
 			clierr.Info("You can add profiles to your AWS config by following our guide: "),
@@ -701,16 +666,15 @@ func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
 		)
 	}
 
-	var profileName string
+	clio.NewLine()
+	if hasDescriptions {
+		header := color.New(color.Underline, color.Bold).Sprintf("%-"+strconv.Itoa(longestProfileNameLength)+"s%s", "Profile", "Description")
+		fmt.Fprintln(os.Stderr, "  "+header)
+	}
 
-	err = testable.AskOne(&in, &profileName, withStdio)
+	selected, err := testable.SelectWithFilter("Please select the profile you would like to assume:", profileKeys, filterMultiToken)
 	if err != nil {
 		return "", err
 	}
-	// Reset the template for select questions to the original
-	survey.SelectQuestionTemplate = originalSelectTemplate
-	profileName = profileNameMap[profileName]
-	// background task to update the frecency cache
-
-	return profileName, nil
+	return profileNameMap[selected], nil
 }

@@ -6,8 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -35,8 +33,8 @@ var AddCredentialsCommand = cli.Command{
 	Action: func(c *cli.Context) error {
 		profileName := c.Args().First()
 		if profileName == "" {
-			in := survey.Input{Message: "Profile Name:"}
-			err := testable.AskOne(&in, &profileName, survey.WithValidator(survey.MinLength(1)))
+			var err error
+			profileName, err = testable.InputWithValidator("Profile Name:", "", testable.Required)
 			if err != nil {
 				return err
 			}
@@ -150,12 +148,11 @@ var ImportCredentialsCommand = cli.Command{
 		}
 
 		if profileName == "" {
-			in := survey.Select{Message: "Profile Name:", Options: profiles.ProfileNames}
-			err := testable.AskOne(&in, &profileName, survey.WithValidator(func(ans interface{}) error {
-				option := ans.(core.OptionAnswer)
-				// Not all profiles are valid for importing, so ensure this profile is suitable, and inform the user if it is not + the reason
-				return validateProfileForImport(c.Context, profiles, option.Value, c.Bool("overwrite"))
-			}))
+			// Not all profiles are valid for importing, so the validator ensures this profile
+			// is suitable, and informs the user if it is not + the reason
+			profileName, err = testable.SelectWithValidator("Profile Name:", profiles.ProfileNames, func(s string) error {
+				return validateProfileForImport(c.Context, profiles, s, c.Bool("overwrite"))
+			})
 			if err != nil {
 				return err
 			}
@@ -244,13 +241,11 @@ var ImportCredentialsCommand = cli.Command{
 }
 
 func promptCredentials() (credentials aws.Credentials, err error) {
-	in1 := survey.Input{Message: "Access Key ID:"}
-	err = testable.AskOne(&in1, &credentials.AccessKeyID)
+	credentials.AccessKeyID, err = testable.Input("Access Key ID:", "")
 	if err != nil {
 		return
 	}
-	in2 := survey.Password{Message: "Secret Access Key:"}
-	err = testable.AskOne(&in2, &credentials.SecretAccessKey)
+	credentials.SecretAccessKey, err = testable.Password("Secret Access Key:")
 	if err != nil {
 		return
 	}
@@ -274,8 +269,7 @@ var UpdateCredentialsCommand = cli.Command{
 				fmt.Println("No credentials in secure storage")
 				return nil
 			}
-			in := survey.Select{Message: "Profile Name:", Options: profileNames}
-			err = testable.AskOne(&in, &profileName)
+			profileName, err = testable.Select("Profile Name:", profileNames)
 			if err != nil {
 				return err
 			}
@@ -357,8 +351,7 @@ var RemoveCredentialsCommand = cli.Command{
 				return nil
 			}
 			if profileName == "" {
-				in := survey.Select{Message: "Profile Name:", Options: secureProfileKeys}
-				err = testable.AskOne(&in, &profileName)
+				profileName, err = testable.Select("Profile Name:", secureProfileKeys)
 				if err != nil {
 					return err
 				}
@@ -371,12 +364,7 @@ This command will remove a profile with the same name from the AWS config file i
 If you have already used 'granted credentials export-plaintext <profile name>' to export the credentials, the profile will not be removed by this command.
 
 `)
-		var confirm bool
-		s := &survey.Confirm{
-			Message: "Are you sure you want to remove these credentials and profile from your AWS config?",
-			Default: true,
-		}
-		err = survey.AskOne(s, &confirm)
+		confirm, err := testable.Confirm("Are you sure you want to remove these credentials and profile from your AWS config?", true)
 		if err != nil {
 			return err
 		}
@@ -434,8 +422,7 @@ var ExportCredentialsCommand = cli.Command{
 			}
 
 			if profileName == "" {
-				in := survey.Select{Message: "Profile Name:", Options: secureProfileKeys}
-				err = testable.AskOne(&in, &profileName)
+				profileName, err = testable.Select("Profile Name:", secureProfileKeys)
 				if err != nil {
 					return err
 				}
@@ -537,8 +524,7 @@ var RotateCredentialsCommand = cli.Command{
 				fmt.Println("No credentials in secure storage")
 				return nil
 			}
-			in := survey.Select{Message: "Profile Name:", Options: profileNames}
-			err = testable.AskOne(&in, &profileName)
+			profileName, err = testable.Select("Profile Name:", profileNames)
 			if err != nil {
 				return err
 			}

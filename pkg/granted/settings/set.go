@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	"github.com/common-fate/grab"
 	"github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/urfave/cli/v2"
 )
 
@@ -45,11 +45,7 @@ var SetConfigCommand = cli.Command{
 
 		var selectedFieldName = c.String("setting")
 		if selectedFieldName == "" {
-			p := &survey.Select{
-				Message: "Select the configuration to change",
-				Options: fields,
-			}
-			err = survey.AskOne(p, &selectedFieldName)
+			selectedFieldName, err = testable.Select("Select the configuration to change", fields)
 			if err != nil {
 				return err
 			}
@@ -62,19 +58,16 @@ var SetConfigCommand = cli.Command{
 		}
 		// Prompt the user to update the field
 		var value interface{}
-		var prompt survey.Prompt
 
 		switch selectedField.Kind() {
 		case reflect.Bool:
 			if !c.IsSet("value") {
-				prompt = &survey.Confirm{
-					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
-					Default: selectedField.Value().(bool),
-				}
-				err = survey.AskOne(prompt, &value)
+				var b bool
+				b, err = testable.Confirm(fmt.Sprintf("Enter new value for %s:", selectedFieldName), selectedField.Value().(bool))
 				if err != nil {
 					return err
 				}
+				value = b
 			} else {
 				valueStr := c.String("value")
 				value, err = strconv.ParseBool(valueStr)
@@ -86,11 +79,7 @@ var SetConfigCommand = cli.Command{
 		case reflect.String:
 			if !c.IsSet("value") {
 				var str string
-				prompt = &survey.Input{
-					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
-					Default: selectedField.Value().(string),
-				}
-				err = survey.AskOne(prompt, &str)
+				str, err = testable.Input(fmt.Sprintf("Enter new value for %s:", selectedFieldName), selectedField.Value().(string))
 				if err != nil {
 					return err
 				}
@@ -100,14 +89,12 @@ var SetConfigCommand = cli.Command{
 			}
 		case reflect.Int:
 			if !c.IsSet("value") {
-				prompt = &survey.Input{
-					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
-					Default: fmt.Sprintf("%v", selectedField.Value()),
-				}
-				err = survey.AskOne(prompt, &value)
+				var str string
+				str, err = testable.Input(fmt.Sprintf("Enter new value for %s:", selectedFieldName), fmt.Sprintf("%v", selectedField.Value()))
 				if err != nil {
 					return err
 				}
+				value = str
 			} else {
 				valueInt := c.String("value")
 				value, err = strconv.Atoi(valueInt)

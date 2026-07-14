@@ -2,9 +2,7 @@ package settings
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/testable"
@@ -33,14 +31,8 @@ var SetProfileOrderingCommand = cli.Command{
 		if err != nil {
 			return err
 		}
-		withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-		in := survey.Select{
-			Message: "Select filter type",
-			Options: []string{"Frecency", "Alphabetical"},
-		}
-		var selection string
 		clio.NewLine()
-		err = testable.AskOne(&in, &selection, withStdio)
+		selection, err := testable.Select("Select filter type", []string{"Frecency", "Alphabetical"})
 		if err != nil {
 			return err
 		}

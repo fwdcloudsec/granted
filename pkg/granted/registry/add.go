@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
@@ -127,9 +126,7 @@ var AddCommand = cli.Command{
 
 			options := []string{DUPLICATE, ABORT}
 
-			in := survey.Select{Message: "Please select which option would you like to choose to resolve: ", Options: options}
-			var selected string
-			err = testable.AskOne(&in, &selected)
+			selected, err := testable.Select("Please select which option would you like to choose to resolve: ", options)
 			if err != nil {
 				return err
 			}

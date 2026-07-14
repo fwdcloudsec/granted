@@ -14,10 +14,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/internal/build"
 	"github.com/fwdcloudsec/granted/pkg/shells"
+	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/fatih/color"
 )
 
@@ -197,13 +197,7 @@ func SetupShellWizard(autoConfigure bool) error {
 	// skip prompt if autoConfigure is set to true
 	if !autoConfigure {
 		clio.Info("To assume roles with Granted, we need to add an alias to your shell profile (https://docs.commonfate.io/granted/internals/shell-alias)")
-		withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-		in := &survey.Confirm{
-			Message: fmt.Sprintf("Install %s alias at %s", shell, cfg.File),
-			Default: true,
-		}
-		var confirm bool
-		err = survey.AskOne(in, &confirm, withStdio)
+		confirm, err := testable.Confirm(fmt.Sprintf("Install %s alias at %s", shell, cfg.File), true)
 		if err != nil {
 			return err
 		}

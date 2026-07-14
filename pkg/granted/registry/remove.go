@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
@@ -32,9 +31,7 @@ var RemoveCommand = cli.Command{
 			registriesWithNames = append(registriesWithNames, r.Name)
 		}
 
-		in := survey.Select{Message: "Please select the git repository you would like to unsubscribe:", Options: registriesWithNames}
-		var out string
-		err = testable.AskOne(&in, &out)
+		out, err := testable.Select("Please select the git repository you would like to unsubscribe:", registriesWithNames)
 		if err != nil {
 			return err
 		}

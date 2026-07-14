@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
 	"github.com/fwdcloudsec/granted/pkg/securestorage"
@@ -226,14 +224,8 @@ var ClearSSOTokensCommand = cli.Command{
 				tokenList = append(tokenList, stringKey)
 				selectionsMap[stringKey] = k
 			}
-			withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-			in := survey.Select{
-				Message: "Select a token to remove from keyring",
-				Options: tokenList,
-			}
 			clio.NewLine()
-			var out string
-			err = testable.AskOne(&in, &out, withStdio)
+			out, err := testable.Select("Select a token to remove from keyring", tokenList)
 			if err != nil {
 				return err
 			}

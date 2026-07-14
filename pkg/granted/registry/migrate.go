@@ -3,7 +3,6 @@ package registry
 import (
 	"fmt"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/testable"
@@ -26,15 +25,11 @@ var MigrateCommand = cli.Command{
 		if len(gConf.ProfileRegistryURLS) > 0 {
 			var registries []grantedConfig.Registry
 			for i, u := range gConf.ProfileRegistryURLS {
-				var msg survey.Input
+				defaultName := "granted-registry"
 				if i > 0 {
-					msg = survey.Input{Message: fmt.Sprintf("Enter a registry name for %s", u), Default: fmt.Sprintf("granted-registry-%d", i)}
-				} else {
-					msg = survey.Input{Message: fmt.Sprintf("Enter a registry name for %s", u), Default: "granted-registry"}
+					defaultName = fmt.Sprintf("granted-registry-%d", i)
 				}
-
-				var selected string
-				err := testable.AskOne(&msg, &selected)
+				selected, err := testable.Input(fmt.Sprintf("Enter a registry name for %s", u), defaultName)
 				if err != nil {
 					return err
 				}
