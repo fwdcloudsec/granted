@@ -151,7 +151,7 @@ func GetShellFromShellEnv(shellEnv string) (string, error) {
 		// Fallback to POSIX
 		return "posix", nil
 	} else {
-		return "", fmt.Errorf("we couldn't detect your shell type (%s). Please follow the steps at https://docs.commonfate.io/granted/internals/shell-alias to assume roles with Granted", shellEnv)
+		return "", fmt.Errorf("we couldn't detect your shell type (%s). Please follow the steps at https://docs.granted.dev/internals/shell-alias to assume roles with Granted", shellEnv)
 	}
 }
 
@@ -196,7 +196,7 @@ func SetupShellWizard(autoConfigure bool) error {
 
 	// skip prompt if autoConfigure is set to true
 	if !autoConfigure {
-		clio.Info("To assume roles with Granted, we need to add an alias to your shell profile (https://docs.commonfate.io/granted/internals/shell-alias)")
+		clio.Info("To assume roles with Granted, we need to add an alias to your shell profile (https://docs.granted.dev/internals/shell-alias)")
 		withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 		in := &survey.Confirm{
 			Message: fmt.Sprintf("Install %s alias at %s", shell, cfg.File),

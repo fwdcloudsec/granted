@@ -45,12 +45,12 @@ var CompletionCommand = cli.Command{
 		case "bash":
 			err = installBashCompletions(c)
 		default:
-			clio.Info("To install completions for other shells, please see our docs: https://docs.commonfate.io/granted/configuration#autocompletion")
+			clio.Info("To install completions for other shells, please see our docs: https://docs.granted.dev/configuration#autocompletion")
 		}
 		return err
 	},
 
-	Description: "Install completions for fish, zsh, or bash. To install completions for other shells, please see our docs:\nhttps://docs.commonfate.io/granted/configuration#autocompletion\n",
+	Description: "Install completions for fish, zsh, or bash. To install completions for other shells, please see our docs:\nhttps://docs.granted.dev/configuration#autocompletion\n",
 }
 
 func installFishCompletions(c *cli.Context) error {
