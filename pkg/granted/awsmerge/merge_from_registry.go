@@ -16,9 +16,10 @@ import (
 )
 
 type RegistryOpts struct {
-	Name                    string
-	PrefixAllProfiles       bool
-	PrefixDuplicateProfiles bool
+	Name                       string
+	PrefixAllProfiles          bool
+	PrefixDuplicateProfiles    bool
+	AllowedCredentialProcesses []string
 }
 
 type DuplicateProfileError struct {
@@ -128,6 +129,15 @@ func WithRegistry(src *ini.File, dst *ini.File, opts RegistryOpts) (*ini.File, e
 		if !isLegalName {
 			clio.Warnf("profile name %s is invalid", sec.Name())
 			continue
+		}
+
+		// Check credential_process allowlist for registry profiles
+		if sec.HasKey("credential_process") {
+			if !isCredentialProcessAllowed(sec.Key("credential_process").Value(), opts.AllowedCredentialProcesses) {
+				clio.Warnf("skipping registry profile %q: credential_process not in allowlist (%q)",
+					strings.TrimPrefix(sec.Name(), "profile "), sec.Key("credential_process").Value())
+				continue
+			}
 		}
 
 		if opts.PrefixAllProfiles {
@@ -306,6 +316,26 @@ func containsTemplate(text string) bool {
 	re := regexp.MustCompile(`{{\s*(.\w+){1,2}\s*}}`)
 
 	return re.MatchString(text)
+}
+
+// defaultAllowedCredentialProcessPrefixes is used when no explicit allowlist is configured.
+var defaultAllowedCredentialProcessPrefixes = []string{
+	"granted credential-process",
+}
+
+// isCredentialProcessAllowed checks whether a credential_process value
+// matches any prefix in the allowlist. Returns true if the value is allowed.
+func isCredentialProcessAllowed(value string, allowlist []string) bool {
+	trimmed := strings.TrimSpace(value)
+	if len(allowlist) == 0 {
+		allowlist = defaultAllowedCredentialProcessPrefixes
+	}
+	for _, prefix := range allowlist {
+		if strings.HasPrefix(trimmed, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func getGrantedGeneratedSections(config *ini.File, name string) []*ini.Section {
