@@ -10,6 +10,7 @@ const (
 	Cn
 	ISO
 	ISOB
+	Eusc
 )
 
 func (p PartitionHost) String() string {
@@ -20,6 +21,8 @@ func (p PartitionHost) String() string {
 		return "aws-us-gov"
 	case Cn:
 		return "aws-cn"
+	case Eusc:
+		return "aws-eusc"
 	case ISO:
 		return "aws-iso"
 	case ISOB:
@@ -41,6 +44,8 @@ func (p PartitionHost) RegionalHostString(region string) string {
 		return regionPrefix + "signin.amazonaws-us-gov.com"
 	case Cn:
 		return regionPrefix + "signin.amazonaws.cn"
+	case Eusc:
+		return regionPrefix + "signin.amazonaws-eusc.eu"
 	}
 
 	// Note: we're not handling the ISO and ISOB cases, I don't think they are supported by a public AWS console
@@ -60,6 +65,8 @@ func (p PartitionHost) RegionalConsoleHostString(region string) string {
 		return "https://" + regionPrefix + "console.amazonaws-us-gov.com/"
 	case Cn:
 		return "https://" + regionPrefix + "console.amazonaws.cn/"
+	case Eusc:
+		return "https://" + regionPrefix + "console.amazonaws-eusc.eu/"
 	}
 	// Note: we're not handling the ISO and ISOB cases, I don't think they are supported by a public AWS console
 	return "https://" + regionPrefix + "console.aws.amazon.com/"
@@ -69,6 +76,9 @@ func GetPartitionFromRegion(region string) PartitionHost {
 	partition := strings.Split(region, "-")
 	if partition[0] == "cn" {
 		return PartitionHost(Cn)
+	}
+	if partition[0] == "eusc" {
+		return PartitionHost(Eusc)
 	}
 	if len(partition) > 1 {
 		if partition[1] == "iso" {
