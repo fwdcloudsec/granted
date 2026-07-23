@@ -55,6 +55,8 @@ var VivaldiPathMac = "Library/Application Support/Vivaldi/Local State"
 var VivaldiPathLinux = ".config/vivaldi/Local State"
 var VivaldiPathWindows = `AppData\Local\Vivaldi\User Data/Local State`
 
+var HeliumPathMac = "Library/Application Support/net.imput.helium/Local State"
+
 // setProfileName attempts to rename an existing Chrome profile from 'Person 2', 'Person 3', etc
 // into the name of the AWS profile that we're launching.
 //
@@ -222,6 +224,9 @@ func getLocalStatePath(browserType string) (stateFile string, err error) {
 
 		case browser.VivaldiKey:
 			stateFile = path.Join(stateFile, VivaldiPathMac)
+
+		case browser.HeliumKey:
+			stateFile = path.Join(stateFile, HeliumPathMac)
 		}
 
 	case "linux":
