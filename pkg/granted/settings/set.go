@@ -7,7 +7,6 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/common-fate/clio"
-	"github.com/common-fate/grab"
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/urfave/cli/v2"
 )
@@ -152,7 +151,10 @@ func (f keyringFields) Set(value any) error {
 	return nil
 }
 func (f keyringFields) Value() any {
-	return grab.Value(grab.Value(f.field))
+	if f.field == nil || *f.field == nil {
+		return ""
+	}
+	return **f.field
 }
 func (f keyringFields) Kind() reflect.Kind {
 	return reflect.String
