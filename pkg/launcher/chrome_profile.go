@@ -12,14 +12,14 @@ import (
 	"github.com/fwdcloudsec/granted/pkg/browser"
 )
 
-type ChromeProfile struct {
+type Chrome struct {
 	// ExecutablePath is the path to the Chrome binary on the system.
 	ExecutablePath string
 
 	BrowserType string
 }
 
-func (l ChromeProfile) LaunchCommand(url string, profile string) ([]string, error) {
+func (l Chrome) LaunchCommand(url string, profile string) ([]string, error) {
 	// Chrome profiles can't contain slashes
 	profileName := strings.ReplaceAll(profile, "/", "-")
 	profileDir := findBrowserProfile(profileName, l.BrowserType)
@@ -249,4 +249,4 @@ func getLocalStatePath(browserType string) (stateFile string, err error) {
 	return stateFile, nil
 }
 
-func (l ChromeProfile) UseForkProcess() bool { return true }
+func (l Chrome) UseForkProcess() bool { return true }
