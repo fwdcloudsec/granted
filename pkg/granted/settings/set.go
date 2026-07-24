@@ -31,12 +31,14 @@ var SetConfigCommand = cli.Command{
 			cfg.Keyring = &config.KeyringConfig{}
 		}
 
-		// custom mapping for the keychain fields because the field options generator doesn;t work for nillable fields
-		fieldMap["Keyring.Backend"] = keyringFields{&cfg.Keyring.Backend}
-		fieldMap["Keyring.KeychainName"] = keyringFields{&cfg.Keyring.KeychainName}
-		fieldMap["Keyring.FileDir"] = keyringFields{&cfg.Keyring.FileDir}
-		fieldMap["Keyring.LibSecretCollectionName"] = keyringFields{&cfg.Keyring.LibSecretCollectionName}
-		fieldMap["Keyring.PassDir"] = keyringFields{&cfg.Keyring.PassDir}
+		// custom mapping for the keychain fields because the field options generator doesn't work for nillable fields
+		fieldMap["Keyring.Backend"] = keyringFields[string]{&cfg.Keyring.Backend}
+		fieldMap["Keyring.KeychainName"] = keyringFields[string]{&cfg.Keyring.KeychainName}
+		fieldMap["Keyring.FileDir"] = keyringFields[string]{&cfg.Keyring.FileDir}
+		fieldMap["Keyring.LibSecretCollectionName"] = keyringFields[string]{&cfg.Keyring.LibSecretCollectionName}
+		fieldMap["Keyring.PassDir"] = keyringFields[string]{&cfg.Keyring.PassDir}
+		fieldMap["Keyring.KeyCtlScope"] = keyringFields[string]{&cfg.Keyring.KeyCtlScope}
+		fieldMap["Keyring.KeyCtlPerm"] = keyringFields[uint32]{&cfg.Keyring.KeyCtlPerm}
 
 		fields := make([]string, 0, len(fieldMap))
 		for k := range fieldMap {
@@ -115,7 +117,27 @@ var SetConfigCommand = cli.Command{
 					return err
 				}
 			}
+		case reflect.Uint32:
+			if !c.IsSet("value") {
+				prompt = &survey.Input{
+					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
+					Default: fmt.Sprintf("%v", selectedField.Value()),
+				}
+				err = survey.AskOne(prompt, &value)
+				if err != nil {
+					return err
+				}
+			} else {
+				valueUint := c.String("value")
+				value, err = strconv.ParseUint(valueUint, 10, 32)
+				if err != nil {
+					return err
+				}
+				value = uint32(value.(uint64))
+
+			}
 		}
+
 
 		err = selectedField.Set(value)
 		if err != nil {
@@ -138,24 +160,25 @@ type Field interface {
 	Kind() reflect.Kind
 }
 
-type keyringFields struct {
+type keyringFields[T string | uint32] struct {
 	// double pointer here is a pointer to a pointer value in the config
 	// so that we can initialise it if it is unset
-	field **string
+	field **T
 }
 
-func (f keyringFields) Set(value any) error {
+func (f keyringFields[T]) Set(value any) error {
 	if *f.field == nil {
-		*f.field = new(string)
+		*f.field = new(T)
 	}
-	**f.field = value.(string)
+	**f.field = value.(T)
 	return nil
 }
-func (f keyringFields) Value() any {
+func (f keyringFields[T]) Value() any {
 	return grab.Value(grab.Value(f.field))
 }
-func (f keyringFields) Kind() reflect.Kind {
-	return reflect.String
+func (f keyringFields[T]) Kind() reflect.Kind {
+	v := reflect.ValueOf(f.Value())
+	return v.Kind()
 }
 
 type field struct {
