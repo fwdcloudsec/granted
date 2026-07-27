@@ -620,7 +620,7 @@ func printFlagUsage(region, service string) {
 		m = append(m, "use -s to open a specific service")
 	}
 	if region == "" || service == "" {
-		clio.Infof("%s ( https://docs.commonfate.io/granted/usage/console )", strings.Join(m, " or "))
+		clio.Infof("%s ( https://docs.granted.dev/usage/console )", strings.Join(m, " or "))
 	}
 }
 
@@ -697,7 +697,7 @@ func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
 	if len(profileKeys) == 0 {
 		return "", clierr.New("Granted couldn't find any AWS profiles in your config file or your credentials file",
 			clierr.Info("You can add profiles to your AWS config by following our guide: "),
-			clierr.Info("https://docs.commonfate.io/granted/getting-started#set-up-your-aws-profile-file"),
+			clierr.Info("https://docs.granted.dev/getting-started#set-up-your-aws-profile-file"),
 		)
 	}
 

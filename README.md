@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-    <a href="https://docs.commonfate.io/granted/getting-started">🚀 Get Started</a>
+    <a href="https://docs.granted.dev/getting-started">🚀 Get Started</a>
 </p>
 
 <p align="center">
@@ -38,7 +38,7 @@ Currently Granted supports accessing roles in AWS. If you'd like to see support 
 
 ## Documentation
 
-Get started by [reading our documentation](https://docs.commonfate.io/granted/getting-started).
+Get started by [reading our documentation](https://docs.granted.dev/getting-started).
 
 ## Contributing
 
@@ -46,4 +46,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for information on how to contribute. W
 
 ## Security
 
-See [SECURITY.md](./SECURITY.md) for security information. You can view our full security documentation on the [Granted website](https://docs.commonfate.io/granted/security).
+See [SECURITY.md](./SECURITY.md) for security information. You can view our full security documentation on the [Granted website](https://docs.granted.dev/security).

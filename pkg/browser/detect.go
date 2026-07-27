@@ -203,7 +203,7 @@ func HandleBrowserWizard(ctx *cli.Context) (string, error) {
 	browserTitle := title.String((strings.ToLower(GetBrowserKey(browserName))))
 	clio.Info("Thanks for using Granted!")
 	clio.Infof("By default, Granted will open the AWS console with this browser: %s", browserTitle)
-	clio.Warn("Granted works best with Firefox but also supports Chrome, Brave, and Edge (https://docs.commonfate.io/granted/introduction#supported-browsers). You can change this setting later by running 'granted browser set'")
+	clio.Warn("Granted works best with Firefox but also supports Chrome, Brave, and Edge (https://docs.granted.dev/introduction#supported-browsers). You can change this setting later by running 'granted browser set'")
 	in := survey.Confirm{
 		Message: "Use Firefox as default Granted browser?",
 		Default: true,
