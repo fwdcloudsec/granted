@@ -44,6 +44,8 @@ Get started by [reading our documentation](https://docs.granted.dev/getting-star
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for information on how to contribute. We welcome all contributors - [join our Slack](https://fwdcloudsec.org/forum/) to discuss the project!
 
+See [MAINTAINERS.md](./MAINTAINERS.md) for the list of project maintainers.
+
 ## Security
 
 See [SECURITY.md](./SECURITY.md) for security information. You can view our full security documentation on the [Granted website](https://docs.granted.dev/security).
