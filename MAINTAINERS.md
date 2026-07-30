@@ -15,5 +15,6 @@ We are in the process of deciding on the full list of maintainers for this proje
 | Maintainer | GitHub ID                                     | Affiliation |
 | ---------- | ---------------------------------------------- | ----------- |
 | Jack Meyer | [meyerjrr](https://github.com/meyerjrr)        | Common Fate |
+| Samuel Burgos | [sbldevnet](https://github.com/sbldevnet) | Independent  |
 
 ## Emeritus
