@@ -74,23 +74,23 @@ var ConsoleCommand = cli.Command{
 		} else {
 			switch cfg.DefaultBrowser {
 			case browser.ChromeKey:
-				l = launcher.ChromeProfile{
+				l = launcher.Chrome{
 					ExecutablePath: cfg.CustomBrowserPath,
 				}
 			case browser.BraveKey:
-				l = launcher.ChromeProfile{
+				l = launcher.Chrome{
 					ExecutablePath: cfg.CustomBrowserPath,
 				}
 			case browser.EdgeKey:
-				l = launcher.ChromeProfile{
+				l = launcher.Chrome{
 					ExecutablePath: cfg.CustomBrowserPath,
 				}
 			case browser.ChromiumKey:
-				l = launcher.ChromeProfile{
+				l = launcher.Chrome{
 					ExecutablePath: cfg.CustomBrowserPath,
 				}
 			case browser.VivaldiKey:
-				l = launcher.ChromeProfile{
+				l = launcher.Chrome{
 					ExecutablePath: cfg.CustomBrowserPath,
 				}
 			case browser.FirefoxKey:
