@@ -1,6 +1,10 @@
 package browser
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestGetBrowserKey(t *testing.T) {
 	tests := []struct {
@@ -41,9 +45,7 @@ func TestGetBrowserKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetBrowserKey(tt.input); got != tt.want {
-				t.Errorf("GetBrowserKey(%q) = %q, want %q", tt.input, got, tt.want)
-			}
+			assert.Equal(t, tt.want, GetBrowserKey(tt.input))
 		})
 	}
 }
@@ -62,9 +64,7 @@ func TestGetBrowserKey_IgnoresDirectoryComponents(t *testing.T) {
 
 	for _, path := range paths {
 		t.Run(path, func(t *testing.T) {
-			if got := GetBrowserKey(path); got != StdoutKey {
-				t.Errorf("GetBrowserKey(%q) = %q, want %q (no match)", path, got, StdoutKey)
-			}
+			assert.Equal(t, StdoutKey, GetBrowserKey(path), "directory components must not select a browser")
 		})
 	}
 }

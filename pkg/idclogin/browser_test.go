@@ -1,8 +1,10 @@
 package idclogin
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // launcherForPath is what turns a configured CustomSSOBrowserPath into a launch
@@ -45,17 +47,11 @@ func TestLauncherForPath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l, err := launcherForPath(tt.path, tt.profile)
-			if err != nil {
-				t.Fatalf("launcherForPath() unexpected error = %v", err)
-			}
+			require.NoError(t, err)
 
 			got, err := l.LaunchCommand(url, tt.profile)
-			if err != nil {
-				t.Fatalf("LaunchCommand() unexpected error = %v", err)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("LaunchCommand() = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
