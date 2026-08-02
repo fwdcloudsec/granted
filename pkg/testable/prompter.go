@@ -10,21 +10,6 @@ import (
 	"charm.land/huh/v2"
 )
 
-// Prompter is the interactive-prompt abstraction used by the testable
-// package's top-level prompt functions. Implementations write to os.Stderr
-// by default because granted's stdout is shell-evaluated.
-type Prompter interface {
-	Confirm(message string, defaultValue bool) (bool, error)
-	ConfirmWithHelp(message string, defaultValue bool, help string) (bool, error)
-	Select(message string, options []string) (string, error)
-	SelectWithValidator(message string, options []string, validate func(string) error) (string, error)
-	SelectWithFilter(message string, options []string, filter func(term, option string) bool) (string, error)
-	Input(message string, defaultValue string) (string, error)
-	InputWithValidator(message, defaultValue string, validate func(string) error) (string, error)
-	InputWithHelp(message, defaultValue, help string) (string, error)
-	Password(message string) (string, error)
-}
-
 // Required is a validator that rejects empty input.
 var Required = func(s string) error {
 	if s == "" {
@@ -34,7 +19,7 @@ var Required = func(s string) error {
 }
 
 var (
-	defaultPrompter Prompter = newHuhPrompter()
+	defaultPrompter = newHuhPrompter()
 	huhKeyMap       *huh.KeyMap
 )
 
@@ -99,6 +84,8 @@ type huhPrompter struct {
 	stdout io.Writer
 }
 
+// newHuhPrompter returns a prompter that writes to os.Stderr, because
+// granted's stdout is shell-evaluated.
 func newHuhPrompter() *huhPrompter {
 	return &huhPrompter{stdin: os.Stdin, stdout: os.Stderr}
 }
