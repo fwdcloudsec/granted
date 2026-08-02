@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -226,6 +227,8 @@ var ClearSSOTokensCommand = cli.Command{
 				tokenList = append(tokenList, stringKey)
 				selectionsMap[stringKey] = k
 			}
+			// map iteration is randomised, so sort for a stable menu order
+			sort.Strings(tokenList)
 			withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 			in := survey.Select{
 				Message: "Select a token to remove from keyring",
