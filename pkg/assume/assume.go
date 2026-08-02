@@ -599,17 +599,6 @@ func EnvKeys(creds aws.Credentials, region string) []string {
 		"AWS_REGION=" + region}
 }
 
-func filterMultiToken(filterValue, optValue string) bool {
-	optValue = strings.ToLower(optValue)
-	filters := strings.Split(strings.ToLower(filterValue), " ")
-	for _, filter := range filters {
-		if !strings.Contains(optValue, filter) {
-			return false
-		}
-	}
-	return true
-}
-
 func printFlagUsage(region, service string) {
 	var m []string
 	if region == "" {
@@ -672,7 +661,7 @@ func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
 		fmt.Fprintln(os.Stderr, "  "+header)
 	}
 
-	selected, err := testable.SelectWithFilter("Please select the profile you would like to assume:", profileKeys, filterMultiToken)
+	selected, err := testable.Select("Please select the profile you would like to assume:", profileKeys)
 	if err != nil {
 		return "", err
 	}

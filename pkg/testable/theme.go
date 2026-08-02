@@ -1,7 +1,6 @@
 package testable
 
 import (
-	"charm.land/bubbles/v2/list"
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
 )
@@ -69,51 +68,11 @@ func grantedTheme(isDark bool) *huh.Styles {
 // huhThemeOpt is the form option that applies grantedTheme.
 var huhThemeOpt = huh.ThemeFunc(grantedTheme)
 
-// applyDelegateStyles mutates a bubbles/list DefaultDelegate so the focused
-// row uses cyan instead of the default fuchsia. The default styles include
-// padding and a left-border that aligns the selected row's text with the
-// unselected rows; preserve those by chaining onto the existing styles
-// rather than building new ones from scratch.
-//
-// Call before list.New — the list copies the delegate by value at
-// construction time, so mutating the local variable afterwards has no effect.
-func applyDelegateStyles(d *list.DefaultDelegate) {
-	cyan := lipgloss.Color("6")
-	// ANSI 2 picks up the terminal's "green" — same role as huh.Select's
-	// SelectedOption color, just palette-respecting instead of hex-locked.
-	green := lipgloss.Color("2")
-	dim := lipgloss.Color("243")
+// validationErrorStyle renders a rejected selection under the picker.
+var validationErrorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 
-	// Replace the default per-row left-border indicator with a `>` cursor
-	// to match huh.Select's focus marker (and by extension survey's `❯`).
-	// Border is cyan (matching SelectSelector), text is green (matching
-	// SelectedOption) — same two-color treatment huh.Select uses.
-	cursorBorder := lipgloss.Border{Left: ">"}
-	d.Styles.SelectedTitle = d.Styles.SelectedTitle.
-		Border(cursorBorder, false, false, false, true).
-		BorderForeground(cyan).
-		Foreground(green).
-		Padding(0, 0, 0, 1)
-	d.Styles.SelectedDesc = d.Styles.SelectedDesc.
-		Border(cursorBorder, false, false, false, true).
-		BorderForeground(cyan).
-		Foreground(green).
-		Padding(0, 0, 0, 1)
-	d.Styles.DimmedTitle = d.Styles.DimmedTitle.Foreground(dim)
-	d.Styles.DimmedDesc = d.Styles.DimmedDesc.Foreground(dim)
-	d.Styles.FilterMatch = lipgloss.NewStyle().Underline(true)
-}
+// helpStyle renders the picker's key hints.
+var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("243")).PaddingTop(1)
 
-// applyListStyles mutates a bubbles/list Model so its chrome matches the
-// huh.Select aesthetic: bold-neutral title, flush-left bars. The status
-// bar stays visible — it's the only feedback channel for showing what
-// the user has typed into the filter (rendered as `"<filter>" N items`).
-// The defaults indent every bar 2 chars and add a blank line between
-// sections, which makes the picker look more padded than the other prompts.
-func applyListStyles(l *list.Model) {
-	l.Styles.Title = lipgloss.NewStyle().Bold(true)
-	l.Styles.TitleBar = lipgloss.NewStyle()
-	l.Styles.StatusBar = lipgloss.NewStyle().Foreground(lipgloss.Color("243"))
-	l.Styles.HelpStyle = lipgloss.NewStyle().PaddingTop(1)
-	l.Styles.PaginationStyle = lipgloss.NewStyle()
-}
+// filterLabelStyle renders the active filter beside the picker's title.
+var filterLabelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))

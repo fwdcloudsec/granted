@@ -82,12 +82,18 @@ func Password(message string) (string, error) {
 type huhPrompter struct {
 	stdin  io.Reader
 	stdout io.Writer
+
+	// a field rather than a direct call so a test can check the public Select
+	// functions reach it; an unused method compiles happily
+	runSelect func(message string, options []string, validate func(string) error) (string, error)
 }
 
 // newHuhPrompter returns a prompter that writes to os.Stderr, because
 // granted's stdout is shell-evaluated.
 func newHuhPrompter() *huhPrompter {
-	return &huhPrompter{stdin: os.Stdin, stdout: os.Stderr}
+	h := &huhPrompter{stdin: os.Stdin, stdout: os.Stderr}
+	h.runSelect = h.runPicker
+	return h
 }
 
 func (h *huhPrompter) Confirm(message string, defaultValue bool) (bool, error) {
@@ -122,21 +128,7 @@ func (h *huhPrompter) SelectWithValidator(message string, options []string, vali
 }
 
 func (h *huhPrompter) selectWith(message string, options []string, validate func(string) error) (string, error) {
-	if isTesting {
-		return testInputAsString(), nil
-	}
-	var ans string
-	sel := huh.NewSelect[string]().
-		Title(message).
-		Options(huh.NewOptions(options...)...).
-		Value(&ans)
-	if validate != nil {
-		sel = sel.Validate(validate)
-	}
-	err := huh.NewForm(
-		huh.NewGroup(sel),
-	).WithInput(h.stdin).WithOutput(h.stdout).WithKeyMap(huhKeyMap).WithTheme(huhThemeOpt).Run()
-	return ans, err
+	return h.runSelect(message, options, validate)
 }
 
 func (h *huhPrompter) Input(message string, defaultValue string) (string, error) {
