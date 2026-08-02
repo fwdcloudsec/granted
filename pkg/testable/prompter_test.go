@@ -11,12 +11,12 @@ func setNextInput(t *testing.T, v StringOrBool) {
 	nextSurveyInput = func() StringOrBool { return v }
 }
 
-func TestRequired(t *testing.T) {
-	if err := Required(""); err == nil {
-		t.Error("Required(\"\") = nil, want error rejecting empty input")
+func TestNonEmpty(t *testing.T) {
+	if err := NonEmpty(""); err == nil {
+		t.Error("NonEmpty(\"\") = nil, want error rejecting empty input")
 	}
-	if err := Required("x"); err != nil {
-		t.Errorf("Required(\"x\") = %v, want nil", err)
+	if err := NonEmpty("x"); err != nil {
+		t.Errorf("NonEmpty(\"x\") = %v, want nil", err)
 	}
 }
 

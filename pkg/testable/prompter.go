@@ -10,8 +10,8 @@ import (
 	"charm.land/huh/v2"
 )
 
-// Required is a validator that rejects empty input.
-var Required = func(s string) error {
+// NonEmpty is a validator that rejects empty input.
+var NonEmpty = func(s string) error {
 	if s == "" {
 		return errors.New("response cannot be empty")
 	}

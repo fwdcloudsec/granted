@@ -113,7 +113,7 @@ func (c ConfigYAML) PromptRequiredKeys(passedKeys []string, interactive bool, re
 				}
 
 				clio.Info("Your Profile Registry requires you to input values for the following keys:")
-				value, err := testable.InputWithValidator(fmt.Sprintf("'%s': %s", fieldName, prompt), "", testable.Required)
+				value, err := testable.InputWithValidator(fmt.Sprintf("'%s': %s", fieldName, prompt), "", testable.NonEmpty)
 				if err != nil {
 					return err
 				}

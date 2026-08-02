@@ -34,7 +34,7 @@ var AddCredentialsCommand = cli.Command{
 		profileName := c.Args().First()
 		if profileName == "" {
 			var err error
-			profileName, err = testable.InputWithValidator("Profile Name:", "", testable.Required)
+			profileName, err = testable.InputWithValidator("Profile Name:", "", testable.NonEmpty)
 			if err != nil {
 				return err
 			}
