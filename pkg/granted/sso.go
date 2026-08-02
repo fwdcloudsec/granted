@@ -308,8 +308,7 @@ var LoginCommand = cli.Command{
 			return err
 		}
 
-		cfg := aws.NewConfig()
-		cfg.Region = ssoRegion
+		cfg := cfaws.LoadSSOConfig(ctx, ssoRegion, "")
 
 		secureSSOTokenStorage := securestorage.NewSecureSSOTokenStorage()
 
@@ -321,9 +320,9 @@ var LoginCommand = cli.Command{
 			clio.Warn("Headless environment detected, falling back to device code flow instead of authorization code")
 		}
 		if useAuthCode && !isHeadless && !c.Bool("use-device-code") {
-			newSSOToken, err = idclogin.LoginWithAuthorizationCode(ctx, *cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
+			newSSOToken, err = idclogin.LoginWithAuthorizationCode(ctx, cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
 		} else {
-			newSSOToken, err = idclogin.Login(ctx, *cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
+			newSSOToken, err = idclogin.Login(ctx, cfg, ssoStartUrl, ssoScopes, ssoBrowserProfile)
 		}
 		if err != nil {
 			return err
