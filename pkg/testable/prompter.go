@@ -31,8 +31,7 @@ func init() {
 	huhKeyMap.Quit.SetHelp("esc/ctrl+c", "cancel")
 }
 
-// Confirm shows a yes/no prompt. In testing mode it consumes one value
-// from the input stream configured by WithNextSurveyInputFunc.
+// Confirm shows a yes/no prompt.
 func Confirm(message string, defaultValue bool) (bool, error) {
 	return defaultPrompter.Confirm(message, defaultValue)
 }
@@ -42,28 +41,23 @@ func ConfirmWithHelp(message string, defaultValue bool, help string) (bool, erro
 	return defaultPrompter.ConfirmWithHelp(message, defaultValue, help)
 }
 
-// Select shows a single-choice list. In testing mode it consumes one value
-// from the input stream configured by WithNextSurveyInputFunc.
+// Select shows a single-choice list. Typing filters it.
 func Select(message string, options []string) (string, error) {
 	return defaultPrompter.Select(message, options)
 }
 
-// SelectWithValidator shows a single-choice list that re-prompts until the
-// validator accepts the selection. In testing mode the validator is ignored
-// and one value is consumed from the test input stream.
+// SelectWithValidator is Select, staying open and reporting why when the
+// validator rejects a selection.
 func SelectWithValidator(message string, options []string, validate func(string) error) (string, error) {
 	return defaultPrompter.SelectWithValidator(message, options, validate)
 }
 
-// Input shows a free-form text prompt. In testing mode it consumes one value
-// from the input stream configured by WithNextSurveyInputFunc.
+// Input shows a free-form text prompt.
 func Input(message string, defaultValue string) (string, error) {
 	return defaultPrompter.Input(message, defaultValue)
 }
 
-// InputWithValidator shows a free-form text prompt that re-prompts until the
-// validator accepts the response. In testing mode the validator is ignored
-// and one value is consumed from the test input stream.
+// InputWithValidator is Input, re-prompting until the validator accepts.
 func InputWithValidator(message, defaultValue string, validate func(string) error) (string, error) {
 	return defaultPrompter.InputWithValidator(message, defaultValue, validate)
 }
@@ -73,8 +67,7 @@ func InputWithHelp(message, defaultValue, help string) (string, error) {
 	return defaultPrompter.InputWithHelp(message, defaultValue, help)
 }
 
-// Password shows a masked-input prompt. In testing mode it consumes one value
-// from the input stream configured by WithNextSurveyInputFunc.
+// Password shows a masked-input prompt.
 func Password(message string) (string, error) {
 	return defaultPrompter.Password(message)
 }
