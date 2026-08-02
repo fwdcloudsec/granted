@@ -20,6 +20,19 @@ type ChromeProfile struct {
 }
 
 func (l ChromeProfile) LaunchCommand(url string, profile string) ([]string, error) {
+	// With no profile to isolate the session into there is nothing to look up,
+	// and an empty --profile-directory would change which profile the browser
+	// opens rather than leaving it alone. The SSO login flow and 'granted
+	// console' both launch without a profile.
+	if profile == "" {
+		return []string{
+			l.ExecutablePath,
+			"--no-first-run",
+			"--no-default-browser-check",
+			url,
+		}, nil
+	}
+
 	// Chrome profiles can't contain slashes
 	profileName := strings.ReplaceAll(profile, "/", "-")
 	profileDir := findBrowserProfile(profileName, l.BrowserType)
