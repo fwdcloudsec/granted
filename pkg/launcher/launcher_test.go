@@ -11,6 +11,9 @@ import (
 func TestForBrowser(t *testing.T) {
 	const url = "https://commonfate.io"
 
+	// 'open' on macOS, 'xdg-open' on Linux.
+	open := browser.OpenCommand()
+
 	tests := []struct {
 		name    string
 		key     string
@@ -20,19 +23,17 @@ func TestForBrowser(t *testing.T) {
 		wantErr error
 	}{
 		{
-			// Safari resolves a bare argument as a file path relative to its
-			// sandbox container, so it must never be executed with the URL
-			// as an argument. This is the regression that motivated ForBrowser.
+			// Safari resolves a bare argument as a file path, not a URL.
 			name: "safari_uses_open",
 			key:  browser.SafariKey,
 			path: "/Applications/Safari.app/Contents/MacOS/Safari",
-			want: []string{"open", "-a", "Safari", url},
+			want: []string{open, "-a", "Safari", url},
 		},
 		{
 			name: "arc_uses_open",
 			key:  browser.ArcKey,
 			path: "/Applications/Arc.app/Contents/MacOS/Arc",
-			want: []string{"open", "-a", "Arc", url},
+			want: []string{open, "-a", "Arc", url},
 		},
 		{
 			name: "firefox",
@@ -65,8 +66,6 @@ func TestForBrowser(t *testing.T) {
 			want: []string{"/usr/bin/zen-browser", "--new-tab", url},
 		},
 		{
-			// The SSO login flow has no browser profile by default. An empty
-			// --profile-directory would change which profile Chrome opens.
 			name: "chrome_without_profile_omits_profile_directory",
 			key:  browser.ChromeKey,
 			path: "/usr/bin/google-chrome",
@@ -79,8 +78,7 @@ func TestForBrowser(t *testing.T) {
 			want: []string{"/usr/bin/vivaldi", "--no-first-run", "--no-default-browser-check", url},
 		},
 		{
-			// CustomKey needs the configured launch template and its arguments,
-			// which ForBrowser has no access to, so callers resolve it themselves.
+			// CustomKey needs the launch template, which ForBrowser has no access to.
 			name:    "custom_is_left_to_the_caller",
 			key:     browser.CustomKey,
 			path:    "/usr/bin/whatever",
@@ -123,9 +121,6 @@ func TestForBrowser(t *testing.T) {
 	}
 }
 
-// Direct is the fallback for browsers Granted does not recognise. It must keep
-// passing the URL as a bare argument, because that is the behaviour those
-// configurations already have.
 func TestDirect_LaunchCommand(t *testing.T) {
 	l := Direct{ExecutablePath: "/opt/some-browser/bin/browser"}
 
@@ -144,8 +139,7 @@ func TestDirect_LaunchCommand(t *testing.T) {
 	}
 }
 
-// The forkprocess library cannot run 'open', so launchers built on it must not
-// ask for it.
+// forkprocess cannot run 'open'.
 func TestForBrowser_OpenLaunchersDoNotForkProcess(t *testing.T) {
 	for _, key := range []string{browser.SafariKey, browser.ArcKey} {
 		l, err := ForBrowser(key, "", "")

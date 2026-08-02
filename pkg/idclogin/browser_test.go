@@ -3,16 +3,16 @@ package idclogin
 import (
 	"testing"
 
+	"github.com/fwdcloudsec/granted/pkg/browser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// launcherForPath is what turns a configured CustomSSOBrowserPath into a launch
-// command. Safari is the case that motivated it: executing the Safari binary
-// with a URL argument makes Safari resolve it as a file path relative to its
-// sandbox container, so the login page never opens.
 func TestLauncherForPath(t *testing.T) {
 	const url = "https://example.awsapps.com/start/#/device?user_code=ABCD-EFGH"
+
+	// 'open' on macOS, 'xdg-open' on Linux.
+	open := browser.OpenCommand()
 
 	tests := []struct {
 		name    string
@@ -23,7 +23,7 @@ func TestLauncherForPath(t *testing.T) {
 		{
 			name: "safari_is_launched_with_open",
 			path: "/Applications/Safari.app/Contents/MacOS/Safari",
-			want: []string{"open", "-a", "Safari", url},
+			want: []string{open, "-a", "Safari", url},
 		},
 		{
 			name: "firefox_keeps_its_own_launcher",
@@ -31,8 +31,6 @@ func TestLauncherForPath(t *testing.T) {
 			want: []string{"/usr/bin/firefox", "--new-tab", url},
 		},
 		{
-			// Unrecognised binaries keep being executed directly, which is the
-			// behaviour those configurations already have.
 			name: "unknown_browser_is_executed_directly",
 			path: "/opt/some-browser/bin/browser",
 			want: []string{"/opt/some-browser/bin/browser", url},

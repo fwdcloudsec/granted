@@ -11,9 +11,7 @@ import (
 	"github.com/fwdcloudsec/granted/pkg/browser"
 )
 
-// writeLocalState creates a Chrome 'Local State' file under a temporary home
-// directory and points the process at it, so that profile lookup can be tested
-// without touching the developer's real browser configuration.
+// writeLocalState points Chrome profile lookup at a temporary home directory.
 func writeLocalState(t *testing.T, infoCache map[string]any) {
 	t.Helper()
 
@@ -30,8 +28,7 @@ func writeLocalState(t *testing.T, infoCache map[string]any) {
 	}
 
 	home := t.TempDir()
-	// os.UserHomeDir reads $HOME everywhere except Windows, where it reads
-	// %USERPROFILE%.
+	// os.UserHomeDir reads %USERPROFILE% on Windows, $HOME elsewhere.
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 
@@ -52,8 +49,6 @@ func writeLocalState(t *testing.T, infoCache map[string]any) {
 	}
 }
 
-// A profile whose name matches an existing Chrome profile is launched into that
-// profile's directory, which is what isolates one assumed role from another.
 func TestChromeProfile_LaunchCommand_ResolvesProfileDirectory(t *testing.T) {
 	writeLocalState(t, map[string]any{
 		"Default":   map[string]any{"name": "Person 1"},
@@ -79,8 +74,6 @@ func TestChromeProfile_LaunchCommand_ResolvesProfileDirectory(t *testing.T) {
 	}
 }
 
-// An unknown profile name falls back to being used as the directory name, which
-// is how a new profile gets created.
 func TestChromeProfile_LaunchCommand_UnknownProfileFallsBack(t *testing.T) {
 	writeLocalState(t, map[string]any{
 		"Default": map[string]any{"name": "Person 1"},
@@ -105,8 +98,7 @@ func TestChromeProfile_LaunchCommand_UnknownProfileFallsBack(t *testing.T) {
 	}
 }
 
-// Chrome profile names cannot contain slashes, so a role name containing one is
-// rewritten before lookup.
+// Chrome profile names cannot contain slashes.
 func TestChromeProfile_LaunchCommand_ReplacesSlashesInProfileName(t *testing.T) {
 	writeLocalState(t, map[string]any{
 		"Profile 7": map[string]any{"name": "sso-my-role"},
@@ -124,9 +116,7 @@ func TestChromeProfile_LaunchCommand_ReplacesSlashesInProfileName(t *testing.T) 
 	}
 }
 
-// With no profile there is nothing to isolate, so no --profile-directory is
-// passed at all. Sending an empty one would change which profile Chrome opens.
-// The SSO login flow and 'granted console' both launch this way.
+// An empty --profile-directory would change which profile Chrome opens.
 func TestChromeProfile_LaunchCommand_NoProfile(t *testing.T) {
 	l := ChromeProfile{BrowserType: browser.ChromeKey, ExecutablePath: "/usr/bin/google-chrome"}
 
