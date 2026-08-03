@@ -128,8 +128,18 @@ func hasGrantedSSOPrefix(rawConfig *ini.Section) bool {
 // also check whether the provided flag to 'granted credential-process --profile pname'
 // matches the AWS config profile name. If it doesn't then return an err
 // as the user will certainly run into unexpected behaviour.
+//
+// The credential_process value may reference the granted/dgranted binary
+// either as a bare command (relying on $PATH resolution) or via a relative
+// or absolute path (e.g. '/home/user/.local/bin/granted'). This allows users
+// to write the full path to the binary, which is useful in environments
+// where the process invoking the AWS SDK doesn't share the same $PATH as
+// the interactive shell (IDEs, GUI apps, containers, cron jobs, etc.).
+// Only the last path segment (the binary name, ignoring any directory
+// prefix and an optional Windows '.exe' suffix) is checked against
+// 'granted'/'dgranted'.
 func validateCredentialProcess(arg string, awsProfileName string) error {
-	regex := regexp.MustCompile(`^(\s+)?(dgranted|granted)\s+credential-process.*--profile\s+(?P<PName>([^\s]+))`)
+	regex := regexp.MustCompile(`^(\s+)?(?:\S*[\\/])?(dgranted|granted)(\.exe)?\s+credential-process.*--profile\s+(?P<PName>([^\s]+))`)
 
 	if regex.MatchString(arg) {
 		matches := regex.FindStringSubmatch(arg)
