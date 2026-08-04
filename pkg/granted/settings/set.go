@@ -43,7 +43,6 @@ var SetConfigCommand = cli.Command{
 		for k := range fieldMap {
 			fields = append(fields, k)
 		}
-		// map iteration is randomised, so sort for a stable menu order
 		sort.Strings(fields)
 
 		var selectedFieldName = c.String("setting")
