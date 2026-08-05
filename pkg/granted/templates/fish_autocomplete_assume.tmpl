@@ -1,0 +1,18 @@
+# Fish completion for {{ .Program }} (assume)
+# Dynamically calls {{ .Program }}go --generate-bash-completion to list profiles and flags
+
+# Disable file completions by default for the assume command
+complete -c {{ .Program }} -f
+
+complete -c {{ .Program }} -a '(
+    set -l tokens (commandline -opc)
+    set -l current (commandline -ct)
+
+    # pass all tokens except the command name, plus --generate-bash-completion
+    set -l args
+    if test (count $tokens) -gt 1
+        set args $tokens[2..-1]
+    end
+
+    FORCE_NO_ALIAS=true {{ .Program }}go $args --generate-bash-completion 2>/dev/null
+)'
