@@ -3,6 +3,7 @@ package settings
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -42,6 +43,7 @@ var SetConfigCommand = cli.Command{
 		for k := range fieldMap {
 			fields = append(fields, k)
 		}
+		sort.Strings(fields)
 
 		var selectedFieldName = c.String("setting")
 		if selectedFieldName == "" {
