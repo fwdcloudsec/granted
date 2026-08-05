@@ -128,6 +128,10 @@ type AWSSSOConfiguration struct {
 	Prefix              string
 	NoCredentialProcess bool
 	ProfileTemplate     string
+	// DefaultRegion sets the 'region' key on generated profiles. This can
+	// differ from SSORegion, allowing a default AWS region that is not the
+	// same as the SSO region.
+	DefaultRegion string `toml:",omitempty"`
 }
 
 // NewDefaultConfig returns a config with OS specific defaults populated
