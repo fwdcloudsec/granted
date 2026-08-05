@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
 	"strings"
@@ -99,7 +100,19 @@ func Find() (string, error) {
 	return outcome, nil
 }
 
+// GetBrowserKey identifies a browser from a display name, from a vendor
+// identifier as returned by Find (a bundle ID on macOS, a .desktop file on
+// Linux, a registry ProgId on Windows), or from the path to its executable.
+// It returns StdoutKey for anything it does not recognise.
+//
+// Only the last path component is considered. Matching is by unanchored
+// substring, which is what lets one implementation handle every identifier
+// format, but the directory components of a path are chosen by the user and
+// routinely contain browser names. Matching those would let a home directory
+// decide which browser gets launched.
 func GetBrowserKey(b string) string {
+	b = filepath.Base(b)
+
 	if strings.Contains(strings.ToLower(b), "chrome") {
 		return ChromeKey
 	}
@@ -208,7 +221,7 @@ func HandleBrowserWizard(ctx *cli.Context) (string, error) {
 	browserTitle := title.String((strings.ToLower(GetBrowserKey(browserName))))
 	clio.Info("Thanks for using Granted!")
 	clio.Infof("By default, Granted will open the AWS console with this browser: %s", browserTitle)
-	clio.Warn("Granted works best with Firefox but also supports Chrome, Brave, and Edge (https://docs.commonfate.io/granted/introduction#supported-browsers). You can change this setting later by running 'granted browser set'")
+	clio.Warn("Granted works best with Firefox but also supports Chrome, Brave, and Edge (https://docs.granted.dev/introduction#supported-browsers). You can change this setting later by running 'granted browser set'")
 	in := survey.Confirm{
 		Message: "Use Firefox as default Granted browser?",
 		Default: true,

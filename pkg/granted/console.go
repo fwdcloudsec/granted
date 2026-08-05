@@ -8,7 +8,6 @@ import (
 
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/clierr"
-	"github.com/fwdcloudsec/granted/pkg/assume"
 	"github.com/fwdcloudsec/granted/pkg/browser"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
 	"github.com/fwdcloudsec/granted/pkg/config"
@@ -66,48 +65,13 @@ var ConsoleCommand = cli.Command{
 			return nil
 		}
 
-		var l assume.Launcher
+		var l launcher.Launcher
 		if cfg.CustomBrowserPath == "" && cfg.DefaultBrowser != "" {
 			l = launcher.Open{}
 		} else if cfg.CustomBrowserPath == "" && cfg.AWSConsoleBrowserLaunchTemplate == nil {
 			return errors.New("default browser not configured. run `granted browser set` to configure")
 		} else {
-			switch cfg.DefaultBrowser {
-			case browser.ChromeKey:
-				l = launcher.ChromeProfile{
-					ExecutablePath: cfg.CustomBrowserPath,
-				}
-			case browser.BraveKey:
-				l = launcher.ChromeProfile{
-					ExecutablePath: cfg.CustomBrowserPath,
-				}
-			case browser.EdgeKey:
-				l = launcher.ChromeProfile{
-					ExecutablePath: cfg.CustomBrowserPath,
-				}
-			case browser.ChromiumKey:
-				l = launcher.ChromeProfile{
-					ExecutablePath: cfg.CustomBrowserPath,
-				}
-			case browser.VivaldiKey:
-				l = launcher.ChromeProfile{
-					ExecutablePath: cfg.CustomBrowserPath,
-				}
-			case browser.HeliumKey:
-				l = launcher.ChromeProfile{
-					ExecutablePath: cfg.CustomBrowserPath,
-				}
-			case browser.FirefoxKey:
-				l = launcher.Firefox{
-					ExecutablePath: cfg.CustomBrowserPath,
-				}
-			case browser.ZenKey:
-				l = launcher.Zen{
-					ExecutablePath: cfg.CustomBrowserPath,
-				}
-			case browser.SafariKey:
-				l = launcher.Safari{}
-			case browser.CustomKey:
+			if cfg.DefaultBrowser == browser.CustomKey {
 				l, err = launcher.CustomFromLaunchTemplate(cfg.AWSConsoleBrowserLaunchTemplate, c.StringSlice("browser-launch-template-arg"))
 				if err == launcher.ErrLaunchTemplateNotConfigured {
 					return errors.New("error configuring custom browser, ensure that [AWSConsoleBrowserLaunchTemplate] is specified in your Granted config file")
@@ -115,8 +79,13 @@ var ConsoleCommand = cli.Command{
 				if err != nil {
 					return err
 				}
-			default:
-				l = launcher.Open{}
+			} else {
+				l, err = launcher.ForBrowser(cfg.DefaultBrowser, cfg.CustomBrowserPath, con.Profile)
+				if errors.Is(err, launcher.ErrUnsupportedBrowser) {
+					l = launcher.Open{}
+				} else if err != nil {
+					return err
+				}
 			}
 		}
 		// now build the actual command to run - e.g. 'firefox --new-tab <URL>'
