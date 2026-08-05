@@ -36,19 +36,6 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-// Launchers give a command that we need to run in order to launch a browser, such as
-// 'open <URL>' or 'firefox --new-tab <URL'. The returned command is a string slice,
-// with each element being an argument. (e.g. []string{"firefox", "--new-tab", "<URL>"})
-type Launcher interface {
-	LaunchCommand(url string, profile string) ([]string, error)
-	// UseForkProcess returns true if the launcher implementation should call
-	// the forkprocess library.
-	//
-	// For launchers that use 'open' commands, this should be false,
-	// as the forkprocess library causes the following error to appear:
-	// 	fork/exec open: no such file or directory
-	UseForkProcess() bool
-}
 type execConfig struct {
 	Cmd  string
 	Args []string
@@ -363,34 +350,8 @@ func AssumeCommand(c *cli.Context) error {
 			return errors.New("default browser not configured. run `granted browser set` to configure")
 		}
 
-		var l Launcher
-		switch cfg.DefaultBrowser {
-		case browser.ChromeKey, browser.BraveKey, browser.EdgeKey, browser.ChromiumKey, browser.VivaldiKey:
-			l = launcher.ChromeProfile{
-				BrowserType:    cfg.DefaultBrowser,
-				ExecutablePath: browserPath,
-			}
-		case browser.FirefoxKey, browser.WaterfoxKey:
-			l = launcher.Firefox{
-				ExecutablePath: browserPath,
-			}
-		case browser.SafariKey:
-			l = launcher.Safari{}
-		case browser.ArcKey:
-			l = launcher.Arc{}
-		case browser.ZenKey:
-			l = launcher.Zen{
-				ExecutablePath: browserPath,
-			}
-		case browser.FirefoxDevEditionKey:
-			l = launcher.FirefoxDevEdition{
-				ExecutablePath: browserPath,
-			}
-		case browser.FirefoxNightlyKey:
-			l = launcher.FirefoxNightly{
-				ExecutablePath: browserPath,
-			}
-		case browser.CustomKey:
+		var l launcher.Launcher
+		if cfg.DefaultBrowser == browser.CustomKey {
 			l, err = launcher.CustomFromLaunchTemplate(cfg.AWSConsoleBrowserLaunchTemplate, c.StringSlice("browser-launch-template-arg"))
 			if err == launcher.ErrLaunchTemplateNotConfigured {
 				return errors.New("error configuring custom browser, ensure that [AWSConsoleBrowserLaunchTemplate] is specified in your Granted config file")
@@ -398,8 +359,13 @@ func AssumeCommand(c *cli.Context) error {
 			if err != nil {
 				return err
 			}
-		default:
-			l = launcher.Open{}
+		} else {
+			l, err = launcher.ForBrowser(cfg.DefaultBrowser, browserPath, containerProfile)
+			if errors.Is(err, launcher.ErrUnsupportedBrowser) {
+				l = launcher.Open{}
+			} else if err != nil {
+				return err
+			}
 		}
 
 		printFlagUsage(con.Region, con.Service)
@@ -620,7 +586,7 @@ func printFlagUsage(region, service string) {
 		m = append(m, "use -s to open a specific service")
 	}
 	if region == "" || service == "" {
-		clio.Infof("%s ( https://docs.commonfate.io/granted/usage/console )", strings.Join(m, " or "))
+		clio.Infof("%s ( https://docs.granted.dev/usage/console )", strings.Join(m, " or "))
 	}
 }
 
@@ -697,7 +663,7 @@ func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
 	if len(profileKeys) == 0 {
 		return "", clierr.New("Granted couldn't find any AWS profiles in your config file or your credentials file",
 			clierr.Info("You can add profiles to your AWS config by following our guide: "),
-			clierr.Info("https://docs.commonfate.io/granted/getting-started#set-up-your-aws-profile-file"),
+			clierr.Info("https://docs.granted.dev/getting-started#set-up-your-aws-profile-file"),
 		)
 	}
 

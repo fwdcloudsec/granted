@@ -8,19 +8,17 @@ import (
 
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/clierr"
+	"github.com/fwdcloudsec/granted/pkg/browser"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/forkprocess"
 	"github.com/fwdcloudsec/granted/pkg/launcher"
-	"github.com/pkg/browser"
+	defaultbrowser "github.com/pkg/browser"
 )
 
 // openBrowser opens the given URL in the user's configured browser,
 // respecting Granted's custom browser settings. If the browser fails to open,
 // it returns an error.
 func openBrowser(url string, browserProfile string) error {
-	// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
-	// The browser path comes from the user's local Granted configuration file,
-	// not from untrusted input.
 	config, err := grantedConfig.Load()
 	if err != nil {
 		return err
@@ -31,12 +29,12 @@ func openBrowser(url string, browserProfile string) error {
 	}
 
 	if config.CustomSSOBrowserPath != "" {
-		return openWithCustomPath(config.CustomSSOBrowserPath, url)
+		return openWithCustomPath(config.CustomSSOBrowserPath, url, browserProfile)
 	}
 
-	browser.Stdout = os.Stderr
-	browser.Stderr = os.Stderr
-	return browser.OpenURL(url)
+  defaultbrowser.Stdout = os.Stderr
+	defaultbrowser.Stderr = os.Stderr
+	return defaultbrowser.OpenURL(url)
 }
 
 func openWithLaunchTemplate(config *grantedConfig.Config, url string, browserProfile string) error {
@@ -48,6 +46,41 @@ func openWithLaunchTemplate(config *grantedConfig.Config, url string, browserPro
 		return err
 	}
 
+	return launch(l, url, browserProfile)
+}
+
+// openWithCustomPath launches the browser configured as CustomSSOBrowserPath.
+//
+// Browsers that Granted recognises are launched through their own Launcher,
+// because not all of them accept a URL as a bare argument. Safari in particular
+// resolves one as a file path relative to its sandbox container, which silently
+// opens the wrong page. Anything Granted does not recognise keeps being executed
+// directly, which is the behaviour those configurations already have.
+func openWithCustomPath(browserPath, url, browserProfile string) error {
+	l, err := launcherForPath(browserPath, browserProfile)
+	if err != nil {
+		return err
+	}
+	return launch(l, url, browserProfile)
+}
+
+func launcherForPath(browserPath, browserProfile string) (launcher.Launcher, error) {
+	key := browser.GetBrowserKey(browserPath)
+
+	l, err := launcher.ForBrowser(key, browserPath, browserProfile)
+	if errors.Is(err, launcher.ErrUnsupportedBrowser) {
+		clio.Debugf("no known browser at %s, launching it directly", browserPath)
+		return launcher.Direct{ExecutablePath: browserPath}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return l, nil
+}
+
+// launch runs a Launcher's command, detaching the browser from Granted so that
+// it outlives the CLI process.
+func launch(l launcher.Launcher, url, browserProfile string) error {
 	args, err := l.LaunchCommand(url, browserProfile)
 	if err != nil {
 		return fmt.Errorf("error building browser launch command: %w", err)
@@ -64,22 +97,15 @@ func openWithLaunchTemplate(config *grantedConfig.Config, url string, browserPro
 
 	clio.Debugf("running command without forkprocess: %s", args)
 	// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
+	// The browser command is built from the user's local Granted configuration
+	// file, not from untrusted input.
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-	return cmd.Start()
-}
-
-func openWithCustomPath(browserPath, url string) error {
-	// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
-	cmd := exec.Command(browserPath, url)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	_ = cmd.Process.Release()
-	return nil
+	return cmd.Process.Release()
 }
 
 // OpenBrowserWithFallbackMessage opens the browser and logs a helpful message if it fails.

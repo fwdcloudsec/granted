@@ -18,7 +18,7 @@ Granted consists of two binaries:
 
 - `assume`: used to assume roles
 
-You can read about how the `assume` binary exports environment variables [here](https://docs.commonfate.io/granted/internals/shell-alias).
+You can read about how the `assume` binary exports environment variables [here](https://docs.granted.dev/internals/shell-alias).
 
 In development we use `dassume` and `dgranted` to avoid collisions between the released and development binaries.
 
