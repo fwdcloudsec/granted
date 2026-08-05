@@ -7,6 +7,7 @@ import (
 
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/cliolog"
+	"github.com/common-fate/useragent"
 	"github.com/fwdcloudsec/granted/internal/build"
 	"github.com/fwdcloudsec/granted/pkg/alias"
 	"github.com/fwdcloudsec/granted/pkg/assumeprint"
@@ -155,6 +156,9 @@ func GetCliApp() *cli.App {
 			if os.Getenv("FORCE_NO_ALIAS") != "true" {
 				return alias.MustBeConfigured(c.Bool("auto-configure-shell"))
 			}
+
+			// set the user agent
+			c.Context = useragent.NewContext(c.Context, "granted", build.Version)
 
 			return nil
 		},

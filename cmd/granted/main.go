@@ -10,12 +10,17 @@ import (
 
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/clierr"
+	"github.com/common-fate/updatecheck"
+	"github.com/fwdcloudsec/granted/internal/build"
 	"github.com/fwdcloudsec/granted/pkg/assume"
 	"github.com/fwdcloudsec/granted/pkg/granted"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
+	updatecheck.Check(updatecheck.GrantedCLI, build.Version, !build.IsDev())
+	defer updatecheck.Print()
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
