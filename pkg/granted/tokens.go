@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -224,6 +225,7 @@ var ClearSSOTokensCommand = cli.Command{
 				tokenList = append(tokenList, stringKey)
 				selectionsMap[stringKey] = k
 			}
+			sort.Strings(tokenList)
 			clio.NewLine()
 			out, err := testable.Select("Select a token to remove from keyring", tokenList)
 			if err != nil {
