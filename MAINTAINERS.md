@@ -8,8 +8,6 @@
 
 This document contains a list of maintainers in this repo. If you're interested in contributing, see [CONTRIBUTING](CONTRIBUTING.md).
 
-We are in the process of deciding on the full list of maintainers for this project.
-
 ## Current Maintainers
 
 | Maintainer    | GitHub ID                                              | Affiliation  |
