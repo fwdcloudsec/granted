@@ -1,60 +1,30 @@
-# Security
+# Security Policy
 
-Security details, including our vulnerability disclosure and release verification processes, are listed in the Granted documentation [here](https://docs.granted.dev/security).
+Granted is maintained by [fwdcloudsec](https://fwdcloudsec.org). Full security documentation, including our release verification process and signing keys, is available at https://docs.granted.dev/security.
 
-If you have any questions or would like to report a vulnerability you can email us at granted-support@fwdcloudsec.org. You may encrypt your message with our PGP key printed below.
+## Reporting a vulnerability
 
-```
------BEGIN PGP PUBLIC KEY BLOCK-----
+Please report security vulnerabilities through [GitHub private vulnerability reporting](https://github.com/fwdcloudsec/granted/security/advisories/new). This creates a private advisory that is only visible to you and the Granted maintainers.
 
-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
-rTAMWpZF8QMyDw==
-=hl9c
------END PGP PUBLIC KEY BLOCK-----
-```
+**Please do not report security vulnerabilities through public GitHub issues.**
+
+If you are unable to use GitHub, you can email granted-support@fwdcloudsec.org instead.
+
+When reporting, please include as much of the following as you can:
+
+- The version of Granted affected
+- Steps to reproduce the issue
+- The potential impact of the vulnerability
+- Any suggested remediation
+
+## Coordinated vulnerability disclosure
+
+We follow a coordinated vulnerability disclosure process, aligned with the requirements of the EU Cyber Resilience Act:
+
+- We will acknowledge your report within 5 business days.
+- We will investigate, keep you informed of progress, and work with you on remediation.
+- We will remediate confirmed vulnerabilities without undue delay and distribute security fixes free of charge through our standard release channels.
+- Once a fix is available, we will publish a [GitHub Security Advisory](https://github.com/fwdcloudsec/granted/security/advisories) describing the vulnerability, its severity and impact, and the fixed versions, and request a CVE where appropriate.
+- We ask that you do not publicly disclose the vulnerability until a fix has been released, and we will credit you in the advisory unless you prefer to remain anonymous.
+
+We do not currently operate a bug bounty program.
