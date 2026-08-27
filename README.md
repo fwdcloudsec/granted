@@ -46,4 +46,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for information on how to contribute. W
 
 ## Security
 
-See [SECURITY.md](./SECURITY.md) for security information. You can view our full security documentation on the [Granted website](https://docs.granted.dev/security).
+See [SECURITY.md](./SECURITY.md) for security information, including how to report a vulnerability. You can view our full security documentation on the [Granted website](https://docs.granted.dev/security).
