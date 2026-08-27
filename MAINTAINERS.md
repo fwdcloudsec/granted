@@ -12,9 +12,12 @@ We are in the process of deciding on the full list of maintainers for this proje
 
 ## Current Maintainers
 
-| Maintainer | GitHub ID                                     | Affiliation |
-| ---------- | ---------------------------------------------- | ----------- |
-| Jack Meyer | [meyerjrr](https://github.com/meyerjrr)        | Common Fate |
-| Samuel Burgos | [sbldevnet](https://github.com/sbldevnet) | Independent  |
+| Maintainer    | GitHub ID                                              | Affiliation  |
+| ------------- | ------------------------------------------------------ | ------------ |
+| Jack Meyer    | [meyerjrr](https://github.com/meyerjrr)                | Common Fate  |
+| Samuel Burgos | [sbldevnet](https://github.com/sbldevnet)              | Independent  |
+| Josh Wilkes   | [JoshuaWilkes](https://github.com/JoshuaWilkes)        | Common Fate  |
+| Chris Norman  | [chrnorm](https://github.com/chrnorm)                  | Common Fate  |
+| Chris Farris  | [jchrisfarris](https://github.com/jchrisfarris)        | fwd:cloudsec |
 
 ## Emeritus
