@@ -21,7 +21,7 @@ When reporting, please include as much of the following as you can:
 
 We follow a coordinated vulnerability disclosure process, aligned with the requirements of the EU Cyber Resilience Act:
 
-- We will acknowledge your report within 5 business days.
+- We aim to acknowledge your report within 5 business days.
 - We will investigate, keep you informed of progress, and work with you on remediation.
 - We will remediate confirmed vulnerabilities without undue delay and distribute security fixes free of charge through our standard release channels.
 - Once a fix is available, we will publish a [GitHub Security Advisory](https://github.com/fwdcloudsec/granted/security/advisories) describing the vulnerability, its severity and impact, and the fixed versions, and request a CVE where appropriate.
