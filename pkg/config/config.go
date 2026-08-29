@@ -108,6 +108,8 @@ type KeyringConfig struct {
 	FileDir                 *string `toml:",omitempty"`
 	LibSecretCollectionName *string `toml:",omitempty"`
 	PassDir                 *string `toml:",omitempty"` // PassDir is the pass password-store directory, ~/ is resolved to the users' home dir
+	KeyCtlScope             *string `toml:",omitempty"`
+	KeyCtlPerm              *uint32 `toml:",omitempty"`
 }
 
 type Registry struct {
