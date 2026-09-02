@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -56,6 +57,7 @@ var GenerateCommand = cli.Command{
 		&cli.StringFlag{Name: "default-region", Usage: "Set the 'region' key on generated profiles (can differ from the SSO region)"},
 		&cli.StringSliceFlag{Name: "source", Usage: "The sources to load AWS profiles from (valid values are: 'aws-sso')", Value: cli.NewStringSlice("aws-sso")},
 		&cli.BoolFlag{Name: "no-credential-process", Usage: "Generate profiles without the Granted credential-process integration"},
+		&cli.BoolFlag{Name: "credential-process-full-path", Usage: "Use the full path to the current granted binary in generated credential_process entries, instead of relying on $PATH"},
 		&cli.StringFlag{Name: "profile-template", Usage: "Specify profile name template", Value: awsconfigfile.DefaultProfileNameTemplate},
 		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
 		&cli.BoolFlag{Name: "use-device-code", Usage: "Force device code flow even if authorization code with PKCE is enabled"},
@@ -102,6 +104,14 @@ var GenerateCommand = cli.Command{
 			return err
 		}
 
+		var binaryPath string
+		if c.Bool("credential-process-full-path") {
+			binaryPath, err = resolveCredentialProcessBinaryPath()
+			if err != nil {
+				return err
+			}
+		}
+
 		g := awsconfigfile.Generator{
 			Config:              ini.Empty(),
 			ProfileNameTemplate: profileNameTemplate,
@@ -124,6 +134,9 @@ var GenerateCommand = cli.Command{
 		err = g.Generate(ctx)
 		if err != nil {
 			return err
+		}
+		if binaryPath != "" {
+			applyCredentialProcessBinaryPath(g.Config, binaryPath)
 		}
 
 		_, err = g.Config.WriteTo(os.Stdout)
@@ -149,6 +162,7 @@ var PopulateCommand = cli.Command{
 		&cli.BoolFlag{Name: "prune", Usage: "Remove any generated profiles with the 'common_fate_generated_from' key which no longer exist"},
 		&cli.StringFlag{Name: "profile-template", Usage: "Specify profile name template", Value: awsconfigfile.DefaultProfileNameTemplate},
 		&cli.BoolFlag{Name: "no-credential-process", Usage: "Generate profiles without the Granted credential-process integration"},
+		&cli.BoolFlag{Name: "credential-process-full-path", Usage: "Use the full path to the current granted binary in generated credential_process entries, instead of relying on $PATH"},
 		&cli.StringFlag{Name: "sso-browser-profile", Usage: "Use a pre-existing profile in your browser for SSO login", EnvVars: []string{"GRANTED_SSO_BROWSER_PROFILE"}},
 		&cli.BoolFlag{Name: "use-device-code", Usage: "Force device code flow even if authorization code with PKCE is enabled"},
 	},
@@ -224,6 +238,14 @@ var PopulateCommand = cli.Command{
 			pruneStartURLs = []string{startURL}
 		}
 
+		var binaryPath string
+		if c.Bool("credential-process-full-path") {
+			binaryPath, err = resolveCredentialProcessBinaryPath()
+			if err != nil {
+				return err
+			}
+		}
+
 		g := awsconfigfile.Generator{
 			Config:              config,
 			ProfileNameTemplate: profileNameTemplate,
@@ -246,6 +268,9 @@ var PopulateCommand = cli.Command{
 		err = g.Generate(ctx)
 		if err != nil {
 			return err
+		}
+		if binaryPath != "" {
+			applyCredentialProcessBinaryPath(config, binaryPath)
 		}
 
 		err = config.SaveTo(configFilename)
@@ -535,4 +560,48 @@ func resolveDefaultRegion(flagValue, configValue string) (string, error) {
 		return "", fmt.Errorf("couldn't parse default-region %s: %w", region, err)
 	}
 	return expanded, nil
+}
+
+// resolveCredentialProcessBinaryPath resolves the full path to the currently
+// running granted binary, for use in generated credential_process entries
+// (see the --credential-process-full-path flag).
+//
+// This is useful in environments where the process invoking the AWS SDK
+// doesn't have the same $PATH as the interactive shell (IDEs, GUI apps,
+// containers, cron jobs, etc.), since a bare 'granted' command would
+// otherwise fail to be found.
+//
+// We deliberately do not resolve symlinks (e.g. via filepath.EvalSymlinks)
+// here, so that a stable symlink path (such as the shims created by tools
+// like asdf or mise) keeps working after the underlying granted binary is
+// upgraded.
+func resolveCredentialProcessBinaryPath() (string, error) {
+	binaryPath, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve the full path to the current granted binary: %w", err)
+	}
+	return binaryPath, nil
+}
+
+func applyCredentialProcessBinaryPath(config *ini.File, binaryPath string) {
+	const generatedFrom = "common_fate_generated_from"
+	const credentialProcess = "credential_process"
+	const defaultCommand = "granted credential-process"
+
+	for _, section := range config.Sections() {
+		generatedFromKey, err := section.GetKey(generatedFrom)
+		if err != nil || generatedFromKey.String() != "aws-sso" {
+			continue
+		}
+
+		key, err := section.GetKey(credentialProcess)
+		if err != nil {
+			continue
+		}
+
+		remainder, ok := strings.CutPrefix(key.String(), defaultCommand)
+		if ok {
+			key.SetValue(binaryPath + " credential-process" + remainder)
+		}
+	}
 }
