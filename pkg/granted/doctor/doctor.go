@@ -58,10 +58,11 @@ func DoctorCommand(c *cli.Context) error {
 
 	if profileName == "" {
 		// ask for a profile to test against
-		profileName, err = assume.QueryProfiles(profiles)
+		selected, err := assume.QueryProfiles(profiles)
 		if err != nil {
 			return err
 		}
+		profileName = selected.Name
 	}
 
 	profile, err := profiles.LoadInitialisedProfile(ctx, profileName)

@@ -193,10 +193,11 @@ func AssumeCommand(c *cli.Context) error {
 		if profileName == "" {
 			showRerunCommand = true
 
-			profileName, err = QueryProfiles(profiles)
+			selected, err := QueryProfiles(profiles)
 			if err != nil {
 				return err
 			}
+			profileName = selected.Name
 			// background task to update the frecency cache
 			wg.Add(1)
 			go func() {
@@ -579,11 +580,11 @@ func printFlagUsage(region, service string) {
 	}
 }
 
-func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
+func QueryProfiles(profiles *cfaws.Profiles) (*cfaws.Profile, error) {
 	// load config to check frecency enabled
 	cfg, err := config.Load()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	_, profileNames := profiles.GetFrecentProfiles()
@@ -591,7 +592,7 @@ func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
 		profileNames = profiles.ProfileNames
 	}
 	if len(profileNames) == 0 {
-		return "", clierr.New("Granted couldn't find any AWS profiles in your config file or your credentials file",
+		return nil, clierr.New("Granted couldn't find any AWS profiles in your config file or your credentials file",
 			clierr.Info("You can add profiles to your AWS config by following our guide: "),
 			clierr.Info("https://docs.granted.dev/getting-started#set-up-your-aws-profile-file"),
 		)
@@ -607,26 +608,26 @@ func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
 	nameColumn := "%-" + strconv.Itoa(longestProfileNameLength) + "s%s"
 	lightBlack := ansi.ColorFunc(ansi.LightBlack)
 	var hasDescriptions bool
-	options := make([]huh.Option[string], len(profileNames))
+	options := make([]huh.Option[*cfaws.Profile], len(profileNames))
 	for i, pn := range profileNames {
-		var description string
+		// GetFrecentProfiles and ProfileNames both only list profiles that loaded
 		p, _ := profiles.Profile(pn)
 
-		if p != nil && p.CustomGrantedProperty("description") != "" {
+		description := p.CustomGrantedProperty("description")
+		if description != "" {
 			hasDescriptions = true
-			description = p.CustomGrantedProperty("description")
 		}
 
 		// the option's label carries the description so it is filterable, while
-		// the value stays the bare profile name
-		options[i] = huh.NewOption(fmt.Sprintf(nameColumn, pn, lightBlack(description)), pn)
+		// the value is the profile itself
+		options[i] = huh.NewOption(fmt.Sprintf(nameColumn, pn, lightBlack(description)), p)
 	}
 
-	var profileName string
-	in := huh.NewSelect[string]().
+	var selected *cfaws.Profile
+	in := huh.NewSelect[*cfaws.Profile]().
 		Title("Please select the profile you would like to assume:").
 		Options(options...).
-		Value(&profileName)
+		Value(&selected)
 	if hasDescriptions {
 		in = in.Description(color.New(color.Underline, color.Bold).Sprintf(nameColumn, "Profile", "Description"))
 	}
@@ -634,8 +635,8 @@ func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
 	clio.NewLine()
 	err = prompt.Form(in).Run()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return profileName, nil
+	return selected, nil
 }
