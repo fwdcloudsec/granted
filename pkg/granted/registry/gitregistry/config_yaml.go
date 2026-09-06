@@ -6,9 +6,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"gopkg.in/yaml.v3"
 )
 
@@ -63,7 +64,6 @@ func (c ConfigYAML) PromptRequiredKeys(passedKeys []string, interactive bool, re
 		for fieldName, values := range v {
 			if isRequiredKey(values) {
 
-				var questions []*survey.Question
 				if len(passedKeys) != 0 {
 					for _, val := range passedKeys {
 						key, value, err := formatKey(val)
@@ -104,40 +104,32 @@ func (c ConfigYAML) PromptRequiredKeys(passedKeys []string, interactive bool, re
 					return fmt.Errorf("sync failed")
 				}
 
-				var prompt string
+				var question string
 				for _, j := range values {
 					for k, v := range j {
 						if k == "prompt" {
-							prompt = v
+							question = v
 						}
 					}
 				}
 
-				withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
+				clio.Info("Your Profile Registry requires you to input values for the following keys:")
 
-				qs := survey.Question{
-					Name:     fieldName,
-					Prompt:   &survey.Input{Message: fmt.Sprintf("'%s': %s", fieldName, prompt)},
-					Validate: survey.Required}
-
-				questions = append(questions, &qs)
-				ansmap := make(map[string]interface{})
-
-				if len(questions) > 0 {
-					clio.Info("Your Profile Registry requires you to input values for the following keys:")
-
-					err = survey.Ask(questions, &ansmap, withStdio)
-					if err != nil {
-						return err
-					}
-
-					err = SaveKeys(gConf, ansmap)
-					if err != nil {
-						return err
-					}
-
-					break
+				var answer string
+				err = prompt.Form(huh.NewInput().
+					Title(fmt.Sprintf("'%s': %s", fieldName, question)).
+					Validate(prompt.NonEmpty).
+					Value(&answer)).Run()
+				if err != nil {
+					return err
 				}
+
+				err = SaveKey(gConf, fieldName, answer)
+				if err != nil {
+					return err
+				}
+
+				break
 
 			} else {
 				// for all other variables add them to registry as variables

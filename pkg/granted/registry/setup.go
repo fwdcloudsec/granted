@@ -4,10 +4,11 @@ import (
 	"os"
 	"path"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	"github.com/common-fate/clio/clierr"
 	"github.com/fwdcloudsec/granted/pkg/git"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 
 	"github.com/urfave/cli/v2"
 )
@@ -39,12 +40,10 @@ var SetupCommand = cli.Command{
 			return err
 		}
 
-		var confirm bool
-		s := &survey.Confirm{
-			Message: "Are you sure you want to copy all of the profiles from your AWS config file?",
-			Default: true,
-		}
-		err = survey.AskOne(s, &confirm)
+		confirm := true
+		err = prompt.Form(huh.NewConfirm().
+			Title("Are you sure you want to copy all of the profiles from your AWS config file?").
+			Value(&confirm)).Run()
 		if err != nil {
 			return err
 		}

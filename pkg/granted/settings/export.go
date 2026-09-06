@@ -2,12 +2,11 @@ package settings
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/config"
-	"github.com/fwdcloudsec/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/urfave/cli/v2"
 )
 
@@ -35,13 +34,11 @@ var SetExportSettingsCommand = cli.Command{
 		if err != nil {
 			return err
 		}
-		withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-		in := survey.Input{
-			Message: "Exported credential suffix:",
-		}
 		var selection string
 		clio.NewLine()
-		err = testable.AskOne(&in, &selection, withStdio)
+		err = prompt.Form(huh.NewInput().
+			Title("Exported credential suffix:").
+			Value(&selection)).Run()
 		if err != nil {
 			return err
 		}

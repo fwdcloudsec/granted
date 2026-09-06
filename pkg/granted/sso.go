@@ -11,7 +11,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/ratelimit"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
@@ -23,8 +23,8 @@ import (
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
 	grantedconfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/idclogin"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/fwdcloudsec/granted/pkg/securestorage"
-	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/schollz/progressbar/v3"
 	"github.com/urfave/cli/v2"
 	uberratelimit "go.uber.org/ratelimit"
@@ -273,8 +273,9 @@ var LoginCommand = cli.Command{
 		ssoStartUrl := c.String("sso-start-url")
 
 		if ssoStartUrl == "" {
-			in1 := survey.Input{Message: "SSO Start URL"}
-			err := testable.AskOne(&in1, &ssoStartUrl)
+			err := prompt.Form(huh.NewInput().
+				Title("SSO Start URL").
+				Value(&ssoStartUrl)).Run()
 			if err != nil {
 				return err
 			}
@@ -304,8 +305,9 @@ var LoginCommand = cli.Command{
 
 			// Fallback to user input
 			if ssoRegion == "" {
-				in2 := survey.Input{Message: "Region"}
-				err := testable.AskOne(&in2, &ssoRegion)
+				err := prompt.Form(huh.NewInput().
+					Title("Region").
+					Value(&ssoRegion)).Run()
 				if err != nil {
 					return err
 				}

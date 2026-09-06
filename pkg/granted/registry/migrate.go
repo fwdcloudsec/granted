@@ -3,10 +3,10 @@ package registry
 import (
 	"fmt"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
-	"github.com/fwdcloudsec/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,15 +26,14 @@ var MigrateCommand = cli.Command{
 		if len(gConf.ProfileRegistryURLS) > 0 {
 			var registries []grantedConfig.Registry
 			for i, u := range gConf.ProfileRegistryURLS {
-				var msg survey.Input
+				selected := "granted-registry"
 				if i > 0 {
-					msg = survey.Input{Message: fmt.Sprintf("Enter a registry name for %s", u), Default: fmt.Sprintf("granted-registry-%d", i)}
-				} else {
-					msg = survey.Input{Message: fmt.Sprintf("Enter a registry name for %s", u), Default: "granted-registry"}
+					selected = fmt.Sprintf("granted-registry-%d", i)
 				}
 
-				var selected string
-				err := testable.AskOne(&msg, &selected)
+				err := prompt.Form(huh.NewInput().
+					Title(fmt.Sprintf("Enter a registry name for %s", u)).
+					Value(&selected)).Run()
 				if err != nil {
 					return err
 				}

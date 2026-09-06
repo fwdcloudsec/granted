@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/config"
-	"github.com/fwdcloudsec/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/text/cases"
@@ -48,14 +48,13 @@ func UserHasDefaultBrowser(ctx *cli.Context) (bool, error) {
 func HandleManualBrowserSelection() (string, error) {
 	// didn't find it, request manual input
 
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-	in := survey.Select{
-		Message: "Select one of the browsers from the list",
-		Options: []string{"Chrome", "Brave", "Edge", "Vivaldi", "Firefox", "Waterfox", "Chromium", "Safari", "Stdout", "FirefoxStdout", "Firefox Developer Edition", "Firefox Nightly", "Arc", "Zen", "Custom"},
-	}
+	browsers := []string{"Chrome", "Brave", "Edge", "Vivaldi", "Firefox", "Waterfox", "Chromium", "Safari", "Stdout", "FirefoxStdout", "Firefox Developer Edition", "Firefox Nightly", "Arc", "Zen", "Custom"}
 	var selection string
 	clio.NewLine()
-	err := testable.AskOne(&in, &selection, withStdio)
+	err := prompt.Form(huh.NewSelect[string]().
+		Title("Select one of the browsers from the list").
+		Options(huh.NewOptions(browsers...)...).
+		Value(&selection)).Run()
 	if err != nil {
 		return "", err
 	}
@@ -207,7 +206,6 @@ func DetectInstallation(browserKey string) (string, bool) {
 }
 
 func HandleBrowserWizard(ctx *cli.Context) (string, error) {
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 	browserName, err := Find()
 	if err != nil {
 		return "", err
@@ -217,12 +215,10 @@ func HandleBrowserWizard(ctx *cli.Context) (string, error) {
 	clio.Info("Thanks for using Granted!")
 	clio.Infof("By default, Granted will open the AWS console with this browser: %s", browserTitle)
 	clio.Warn("Granted works best with Firefox but also supports Chrome, Brave, and Edge (https://docs.granted.dev/introduction#supported-browsers). You can change this setting later by running 'granted browser set'")
-	in := survey.Confirm{
-		Message: "Use Firefox as default Granted browser?",
-		Default: true,
-	}
-	var confirm bool
-	err = testable.AskOne(&in, &confirm, withStdio)
+	confirm := true
+	err = prompt.Form(huh.NewConfirm().
+		Title("Use Firefox as default Granted browser?").
+		Value(&confirm)).Run()
 	if err != nil {
 		return "", err
 	}
@@ -236,7 +232,6 @@ func HandleBrowserWizard(ctx *cli.Context) (string, error) {
 // ConfigureBrowserSelection will verify the existance of the browser executable and promot for a path if it cannot be found
 func ConfigureBrowserSelection(browserName string, path string) error {
 	browserKey := GetBrowserKey(browserName)
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 	title := cases.Title(language.AmericanEnglish)
 	browserTitle := title.String(strings.ToLower(browserKey))
 	// We allow users to configure a custom install path if we cannot detect the installation
@@ -263,9 +258,10 @@ func ConfigureBrowserSelection(browserName string, path string) error {
 				validPath := false
 				for !validPath {
 					// prompt for custom path
-					bpIn := survey.Input{Message: fmt.Sprintf("Please enter the full path to your browser installation for %s:", browserTitle)}
 					clio.NewLine()
-					err := testable.AskOne(&bpIn, &customBrowserPath, withStdio)
+					err := prompt.Form(huh.NewInput().
+						Title(fmt.Sprintf("Please enter the full path to your browser installation for %s:", browserTitle)).
+						Value(&customBrowserPath)).Run()
 					if err != nil {
 						return err
 					}
@@ -317,14 +313,11 @@ func GrantedIntroduction() {
 }
 
 func SSOBrowser(grantedDefaultBrowser string) error {
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-	in := &survey.Confirm{
-		Message: "Use a different browser than your default browser for SSO login?",
-		Default: false,
-		Help:    "For example, if you normally use a password manager in Chrome for your AWS login but Chrome is not your default browser, you would choose to use Chrome for SSO logins. You can change this later by running 'granted browser set-sso'",
-	}
 	var confirm bool
-	err := testable.AskOne(in, &confirm, withStdio)
+	err := prompt.Form(huh.NewConfirm().
+		Title("Use a different browser than your default browser for SSO login?").
+		Description("For example, if you normally use a password manager in Chrome for your AWS login but Chrome is not your default browser, you would choose to use Chrome for SSO logins. You can change this later by running 'granted browser set-sso'").
+		Value(&confirm)).Run()
 	if err != nil {
 		return err
 	}
@@ -355,14 +348,12 @@ func RunFirefoxExtensionPrompts(browserPath string, browserName string) error {
 
 	label := fmt.Sprintf("Open %s to download the extension?", browserName)
 
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-	in := &survey.Select{
-		Message: label,
-		Options: []string{"Yes", "Already installed", "No"},
-	}
 	var out string
 	clio.NewLine()
-	err := testable.AskOne(in, &out, withStdio)
+	err := prompt.Form(huh.NewSelect[string]().
+		Title(label).
+		Options(huh.NewOptions("Yes", "Already installed", "No")...).
+		Value(&out)).Run()
 	if err != nil {
 		return err
 	}
@@ -389,13 +380,11 @@ func RunFirefoxExtensionPrompts(browserPath string, browserName string) error {
 		return err
 	}
 	time.Sleep(time.Second * 2)
-	confIn := &survey.Confirm{
-		Message: "Type Y to continue once you have installed the extension",
-		Default: true,
-	}
-	var confirm bool
+	confirm := true
 	clio.NewLine()
-	err = testable.AskOne(confIn, &confirm, withStdio)
+	err = prompt.Form(huh.NewConfirm().
+		Title("Type Y to continue once you have installed the extension").
+		Value(&confirm)).Run()
 	if err != nil {
 		return err
 	}
@@ -414,7 +403,6 @@ func AskAndGetBrowserPath() (string, error) {
 	}
 
 	browserKey := GetBrowserKey(outcome)
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 	title := cases.Title(language.AmericanEnglish)
 	browserTitle := title.String(strings.ToLower(browserKey))
 	// We allow users to configure a custom install path is we cannot detect the installation
@@ -429,9 +417,10 @@ func AskAndGetBrowserPath() (string, error) {
 			validPath := false
 			for !validPath {
 				// prompt for custom path
-				bpIn := survey.Input{Message: fmt.Sprintf("Please enter the full path to your browser installation for %s:", browserTitle)}
 				clio.NewLine()
-				err := testable.AskOne(&bpIn, &customBrowserPath, withStdio)
+				err := prompt.Form(huh.NewInput().
+					Title(fmt.Sprintf("Please enter the full path to your browser installation for %s:", browserTitle)).
+					Value(&customBrowserPath)).Run()
 				if err != nil {
 					return "", err
 				}

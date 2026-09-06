@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
 	"github.com/fwdcloudsec/granted/pkg/granted/registry/gitregistry"
-	"github.com/fwdcloudsec/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 
 	"github.com/urfave/cli/v2"
 )
@@ -127,9 +127,11 @@ var AddCommand = cli.Command{
 
 			options := []string{DUPLICATE, ABORT}
 
-			in := survey.Select{Message: "Please select which option would you like to choose to resolve: ", Options: options}
 			var selected string
-			err = testable.AskOne(&in, &selected)
+			err = prompt.Form(huh.NewSelect[string]().
+				Title("Please select which option would you like to choose to resolve: ").
+				Options(huh.NewOptions(options...)...).
+				Value(&selected)).Run()
 			if err != nil {
 				return err
 			}

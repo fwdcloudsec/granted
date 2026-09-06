@@ -1,12 +1,12 @@
 package registry
 
 import (
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
 	"github.com/fwdcloudsec/granted/pkg/granted/registry/gitregistry"
-	"github.com/fwdcloudsec/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/urfave/cli/v2"
 )
 
@@ -32,9 +32,11 @@ var RemoveCommand = cli.Command{
 			registriesWithNames = append(registriesWithNames, r.Name)
 		}
 
-		in := survey.Select{Message: "Please select the git repository you would like to unsubscribe:", Options: registriesWithNames}
 		var out string
-		err = testable.AskOne(&in, &out)
+		err = prompt.Form(huh.NewSelect[string]().
+			Title("Please select the git repository you would like to unsubscribe:").
+			Options(huh.NewOptions(registriesWithNames...)...).
+			Value(&out)).Run()
 		if err != nil {
 			return err
 		}
