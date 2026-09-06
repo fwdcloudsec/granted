@@ -19,7 +19,6 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/common-fate/awsconfigfile"
 	"github.com/common-fate/clio"
-	"github.com/common-fate/clio/ansi"
 	"github.com/common-fate/clio/clierr"
 	"github.com/fatih/color"
 	"github.com/fwdcloudsec/granted/pkg/assumeprint"
@@ -605,32 +604,32 @@ func QueryProfiles(profiles *cfaws.Profiles) (*cfaws.Profile, error) {
 		}
 	}
 
-	nameColumn := "%-" + strconv.Itoa(longestProfileNameLength) + "s%s"
-	lightBlack := ansi.ColorFunc(ansi.LightBlack)
-	var hasDescriptions bool
+	// the heading shares the column with the names
+	nameWidth := max(longestProfileNameLength, len("Profile")) + 2
+	nameColumn := "%-" + strconv.Itoa(nameWidth) + "s%s"
+
 	options := make([]huh.Option[*cfaws.Profile], len(profileNames))
 	for i, pn := range profileNames {
 		// GetFrecentProfiles and ProfileNames both only list profiles that loaded
 		p, _ := profiles.Profile(pn)
 
-		description := p.CustomGrantedProperty("description")
-		if description != "" {
-			hasDescriptions = true
-		}
-
 		// the option's label carries the description so it is filterable, while
 		// the value is the profile itself
-		options[i] = huh.NewOption(fmt.Sprintf(nameColumn, pn, lightBlack(description)), p)
+		options[i] = huh.NewOption(fmt.Sprintf(nameColumn, pn, p.CustomGrantedProperty("description")), p)
 	}
+
+	// padded outside the styling so the gap between the headings is not underlined
+	heading := color.New(color.Underline, color.Bold)
+	header := heading.Sprint("Profile") +
+		strings.Repeat(" ", nameWidth-len("Profile")) +
+		heading.Sprint("Description")
 
 	var selected *cfaws.Profile
 	in := huh.NewSelect[*cfaws.Profile]().
 		Title("Please select the profile you would like to assume:").
 		Options(options...).
-		Value(&selected)
-	if hasDescriptions {
-		in = in.Description(color.New(color.Underline, color.Bold).Sprintf(nameColumn, "Profile", "Description"))
-	}
+		Value(&selected).
+		Description(header)
 
 	clio.NewLine()
 	err = prompt.Form(in).Run()
