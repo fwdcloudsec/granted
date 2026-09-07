@@ -12,7 +12,7 @@ import (
 )
 
 // ExportCredsToProfile will write assumed credentials to ~/.aws/credentials with a specified profile name header
-func ExportCredsToProfile(profileName string, creds aws.Credentials) error {
+func ExportCredsToProfile(profileName string, creds aws.Credentials, applySuffix bool) error {
 	// fetch the parsed cred file
 	credPath := GetAWSCredentialsPath()
 
@@ -40,13 +40,15 @@ func ExportCredsToProfile(profileName string, creds aws.Credentials) error {
 		return err
 	}
 
-	cfg, err := gconfig.Load()
-	if err != nil {
-		return err
-	}
+	if applySuffix {
+		cfg, err := gconfig.Load()
+		if err != nil {
+			return err
+		}
 
-	if cfg.ExportCredentialSuffix != nil && *cfg.ExportCredentialSuffix!= "" {
-		profileName = profileName + "-" + *cfg.ExportCredentialSuffix
+		if cfg.ExportCredentialSuffix != nil && *cfg.ExportCredentialSuffix != "" {
+			profileName = profileName + "-" + *cfg.ExportCredentialSuffix
+		}
 	}
 
 	credentialsFile.DeleteSection(profileName)
