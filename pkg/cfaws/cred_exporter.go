@@ -12,12 +12,7 @@ import (
 )
 
 // ExportCredsToProfile will write assumed credentials to ~/.aws/credentials with a specified profile name header
-func ExportCredsToProfile(profileName string, creds aws.Credentials) error {
-	return ExportCredsToProfileWithOptions(profileName, creds, true)
-}
-
-// ExportCredsToProfileWithOptions will write assumed credentials to ~/.aws/credentials with additional export options
-func ExportCredsToProfileWithOptions(profileName string, creds aws.Credentials, applySuffix bool) error {
+func ExportCredsToProfile(profileName string, creds aws.Credentials, applySuffix bool) error {
 	// fetch the parsed cred file
 	credPath := GetAWSCredentialsPath()
 

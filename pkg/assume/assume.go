@@ -440,7 +440,7 @@ func AssumeCommand(c *cli.Context) error {
 				applyExportSuffix = false
 			}
 
-			err = cfaws.ExportCredsToProfileWithOptions(exportProfileName, creds, applyExportSuffix)
+			err = cfaws.ExportCredsToProfile(exportProfileName, creds, applyExportSuffix)
 			if err != nil {
 				return err
 			}
