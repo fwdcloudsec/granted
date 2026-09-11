@@ -190,8 +190,7 @@ func (c *Profile) SSOLogin(ctx context.Context, configOpts ConfigOpts) (aws.Cred
 	}
 
 	if cachedToken == nil && plainTextToken == nil {
-		newCfg := aws.NewConfig()
-		newCfg.Region = rootProfile.SSORegion()
+		newCfg := LoadSSOConfig(ctx, rootProfile.SSORegion(), rootProfile.Name)
 
 		var newSSOToken *securestorage.SSOToken
 		var err error
@@ -203,9 +202,9 @@ func (c *Profile) SSOLogin(ctx context.Context, configOpts ConfigOpts) (aws.Cred
 			clio.Warn("Headless environment detected, falling back to device code flow instead of authorization code")
 		}
 		if configOpts.UseAuthorizationCode && !useDeviceCode {
-			newSSOToken, err = idclogin.LoginWithAuthorizationCode(ctx, *newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes(), configOpts.SSOBrowserProfile)
+			newSSOToken, err = idclogin.LoginWithAuthorizationCode(ctx, newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes(), configOpts.SSOBrowserProfile)
 		} else {
-			newSSOToken, err = idclogin.Login(ctx, *newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes(), configOpts.SSOBrowserProfile)
+			newSSOToken, err = idclogin.Login(ctx, newCfg, rootProfile.SSOStartURL(), rootProfile.SSOScopes(), configOpts.SSOBrowserProfile)
 		}
 		if err != nil {
 			return aws.Credentials{}, err
@@ -224,10 +223,9 @@ func (c *Profile) SSOLogin(ctx context.Context, configOpts ConfigOpts) (aws.Cred
 		accessToken = &plainTextToken.AccessToken
 	}
 
-	cfg := aws.NewConfig()
-	cfg.Region = c.SSORegion()
+	cfg := LoadSSOConfig(ctx, c.SSORegion(), c.Name)
 
-	return c.SSOLoginWithToken(ctx, cfg, accessToken, secureSSOTokenStorage, configOpts)
+	return c.SSOLoginWithToken(ctx, &cfg, accessToken, secureSSOTokenStorage, configOpts)
 }
 
 func (c *Profile) getRoleCredentialsWithRetry(ctx context.Context, ssoClient *sso.Client, accessToken *string, rootProfile *Profile) (*ssotypes.RoleCredentials, error) {

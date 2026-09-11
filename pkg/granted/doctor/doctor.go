@@ -225,9 +225,8 @@ func (d *GrantedDoctor) CheckValidCredentials(ctx context.Context, token cfaws.S
 		return err
 	}
 
-	cfg := aws.NewConfig()
-	cfg.Region = d.Profile.SSORegion()
-	creds, err := d.Profile.SSOLoginWithToken(ctx, cfg, &token.AccessToken, secureSSOTokenStorage, cfaws.ConfigOpts{UseAuthorizationCode: gCfg.UseAuthorizationCode})
+	cfg := cfaws.LoadSSOConfig(ctx, d.Profile.SSORegion(), d.Profile.Name)
+	creds, err := d.Profile.SSOLoginWithToken(ctx, &cfg, &token.AccessToken, secureSSOTokenStorage, cfaws.ConfigOpts{UseAuthorizationCode: gCfg.UseAuthorizationCode})
 	if _, ok := err.(cfaws.NoAccessError); ok {
 		clio.Info("No access to current profile, skipping...\n")
 		return nil
