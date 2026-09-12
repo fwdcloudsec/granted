@@ -13,13 +13,12 @@ import (
 
 	"os"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/alessio/shellescape"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/common-fate/awsconfigfile"
 	"github.com/common-fate/clio"
-	"github.com/common-fate/clio/ansi"
 	"github.com/common-fate/clio/clierr"
 	"github.com/fatih/color"
 	"github.com/fwdcloudsec/granted/pkg/assumeprint"
@@ -29,7 +28,7 @@ import (
 	"github.com/fwdcloudsec/granted/pkg/console"
 	"github.com/fwdcloudsec/granted/pkg/forkprocess"
 	"github.com/fwdcloudsec/granted/pkg/launcher"
-	"github.com/fwdcloudsec/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	cfflags "github.com/fwdcloudsec/granted/pkg/urfav_overrides"
 	"github.com/hako/durafmt"
 	"github.com/urfave/cli/v2"
@@ -193,10 +192,11 @@ func AssumeCommand(c *cli.Context) error {
 		if profileName == "" {
 			showRerunCommand = true
 
-			profileName, err = QueryProfiles(profiles)
+			selected, err := QueryProfiles(profiles)
 			if err != nil {
 				return err
 			}
+			profileName = selected.Name
 			// background task to update the frecency cache
 			wg.Add(1)
 			go func() {
@@ -576,17 +576,6 @@ func EnvKeys(creds aws.Credentials, region string) []string {
 		"AWS_REGION=" + region}
 }
 
-func filterMultiToken(filterValue string, optValue string, optIndex int) bool {
-	optValue = strings.ToLower(optValue)
-	filters := strings.Split(strings.ToLower(filterValue), " ")
-	for _, filter := range filters {
-		if !strings.Contains(optValue, filter) {
-			return false
-		}
-	}
-	return true
-}
-
 func printFlagUsage(region, service string) {
 	var m []string
 	if region == "" {
@@ -600,93 +589,63 @@ func printFlagUsage(region, service string) {
 	}
 }
 
-func QueryProfiles(profiles *cfaws.Profiles) (string, error) {
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
+func QueryProfiles(profiles *cfaws.Profiles) (*cfaws.Profile, error) {
 	// load config to check frecency enabled
 	cfg, err := config.Load()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	_, profileNames := profiles.GetFrecentProfiles()
 	if cfg.Ordering == "Alphabetical" {
 		profileNames = profiles.ProfileNames
 	}
-	profileNameMap := make(map[string]string)
-	profileKeys := make([]string, len(profileNames))
+	if len(profileNames) == 0 {
+		return nil, clierr.New("Granted couldn't find any AWS profiles in your config file or your credentials file",
+			clierr.Info("You can add profiles to your AWS config by following our guide: "),
+			clierr.Info("https://docs.granted.dev/getting-started#set-up-your-aws-profile-file"),
+		)
+	}
+
 	var longestProfileNameLength int
 	for _, pn := range profileNames {
 		if len(pn) > longestProfileNameLength {
 			longestProfileNameLength = len(pn)
 		}
 	}
-	lightBlack := ansi.ColorFunc(ansi.LightBlack)
-	var hasDescriptions bool
+
+	// the heading shares the column with the names
+	nameWidth := max(longestProfileNameLength, len("Profile")) + 2
+	nameColumn := "%-" + strconv.Itoa(nameWidth) + "s%s"
+
+	options := make([]huh.Option[*cfaws.Profile], len(profileNames))
 	for i, pn := range profileNames {
-		var description string
+		// GetFrecentProfiles and ProfileNames both only list profiles that loaded
 		p, _ := profiles.Profile(pn)
 
-		if p != nil && p.CustomGrantedProperty("description") != "" {
-			hasDescriptions = true
-			description = p.CustomGrantedProperty("description")
-		}
-
-		stringKey := fmt.Sprintf("%-"+strconv.Itoa(longestProfileNameLength)+"s%s", pn, lightBlack(description))
-
-		profileNameMap[stringKey] = pn
-		profileKeys[i] = stringKey
+		// the option's label carries the description so it is filterable, while
+		// the value is the profile itself
+		options[i] = huh.NewOption(fmt.Sprintf(nameColumn, pn, p.CustomGrantedProperty("description")), p)
 	}
-	var promptHeader string
-	// only add the description headers if there are profiles using descriptions
-	if hasDescriptions {
-		promptHeader = fmt.Sprintf(`{{- "  %s\n"}}`, color.New(color.Underline, color.Bold).Sprintf("%-"+strconv.Itoa(longestProfileNameLength)+"s%s", "Profile", "Description"))
-	}
-	// This overrides the default prompt template to add a header row above the options
-	// this should be reset back to the original template after the call to AskOne
-	originalSelectTemplate := survey.SelectQuestionTemplate
-	survey.SelectQuestionTemplate = fmt.Sprintf(`
-{{- define "option"}}
-    {{- if eq .SelectedIndex .CurrentIndex }}{{color .Config.Icons.SelectFocus.Format }}{{ .Config.Icons.SelectFocus.Text }} {{else}}{{color "default"}}  {{end}}
-    {{- .CurrentOpt.Value}}{{ if ne ($.GetDescription .CurrentOpt) "" }} - {{color "cyan"}}{{ $.GetDescription .CurrentOpt }}{{end}}
-    {{- color "reset"}}
-{{end}}
-{{- if .ShowHelp }}{{- color .Config.Icons.Help.Format }}{{ .Config.Icons.Help.Text }} {{ .Help }}{{color "reset"}}{{"\n"}}{{end}}
-{{- color .Config.Icons.Question.Format }}{{ .Config.Icons.Question.Text }} {{color "reset"}}
-{{- color "default+hb"}}{{ .Message }}{{ .FilterMessage }}{{color "reset"}}
-{{- if .ShowAnswer}}{{color "cyan"}} {{.Answer}}{{color "reset"}}{{"\n"}}
-{{- else}}
-  {{- "  "}}{{- color "cyan"}}[Use arrows to move, type to filter{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
-  {{- "\n"}}
-%s{{- "\n"}}
-  {{- range $ix, $option := .PageEntries}}
-    {{- template "option" $.IterateOption $ix $option}}
-  {{- end}}
-{{- end}}`, promptHeader)
+
+	// padded outside the styling so the gap between the headings is not underlined
+	heading := color.New(color.Underline, color.Bold)
+	header := heading.Sprint("Profile") +
+		strings.Repeat(" ", nameWidth-len("Profile")) +
+		heading.Sprint("Description")
+
+	var selected *cfaws.Profile
+	in := huh.NewSelect[*cfaws.Profile]().
+		Title("Please select the profile you would like to assume:").
+		Options(options...).
+		Value(&selected).
+		Description(header)
 
 	clio.NewLine()
-	// Replicate the logic from original assume fn.
-	in := survey.Select{
-		Message: "Please select the profile you would like to assume:",
-		Options: profileKeys,
-		Filter:  filterMultiToken,
-	}
-	if len(profileKeys) == 0 {
-		return "", clierr.New("Granted couldn't find any AWS profiles in your config file or your credentials file",
-			clierr.Info("You can add profiles to your AWS config by following our guide: "),
-			clierr.Info("https://docs.granted.dev/getting-started#set-up-your-aws-profile-file"),
-		)
-	}
-
-	var profileName string
-
-	err = testable.AskOne(&in, &profileName, withStdio)
+	err = prompt.Form(in).Run()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	// Reset the template for select questions to the original
-	survey.SelectQuestionTemplate = originalSelectTemplate
-	profileName = profileNameMap[profileName]
-	// background task to update the frecency cache
 
-	return profileName, nil
+	return selected, nil
 }

@@ -14,11 +14,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
-	"github.com/fwdcloudsec/granted/internal/build"
-	"github.com/fwdcloudsec/granted/pkg/shells"
 	"github.com/fatih/color"
+	"github.com/fwdcloudsec/granted/internal/build"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
+	"github.com/fwdcloudsec/granted/pkg/shells"
 )
 
 func init() {
@@ -197,13 +198,10 @@ func SetupShellWizard(autoConfigure bool) error {
 	// skip prompt if autoConfigure is set to true
 	if !autoConfigure {
 		clio.Info("To assume roles with Granted, we need to add an alias to your shell profile (https://docs.granted.dev/internals/shell-alias)")
-		withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-		in := &survey.Confirm{
-			Message: fmt.Sprintf("Install %s alias at %s", shell, cfg.File),
-			Default: true,
-		}
-		var confirm bool
-		err = survey.AskOne(in, &confirm, withStdio)
+		confirm := true
+		err = prompt.Form(huh.NewConfirm().
+			Title(fmt.Sprintf("Install %s alias at %s", shell, cfg.File)).
+			Value(&confirm)).Run()
 		if err != nil {
 			return err
 		}

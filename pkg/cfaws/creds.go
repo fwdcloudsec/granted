@@ -6,15 +6,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/fwdcloudsec/granted/pkg/securestorage"
-	"github.com/fwdcloudsec/granted/pkg/testable"
 )
 
 func TypeCredsToAwsCreds(c types.Credentials) aws.Credentials {
@@ -122,9 +122,7 @@ func GetCredentialsCreds(ctx context.Context, c *Profile) (aws.Credentials, erro
 }
 
 func MfaTokenProvider() (string, error) {
-	in := survey.Input{Message: "MFA Token"}
 	var out string
-	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-	err := testable.AskOne(&in, &out, withStdio)
+	err := prompt.Form(huh.NewInput().Title("MFA Token").Value(&out)).Run()
 	return out, err
 }

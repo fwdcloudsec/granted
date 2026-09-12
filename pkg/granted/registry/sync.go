@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
-	"github.com/fwdcloudsec/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/urfave/cli/v2"
 )
 
@@ -77,10 +76,11 @@ func SyncProfileRegistries(ctx context.Context, interactive bool) error {
 
 			options := []string{DUPLICATE, ABORT}
 
-			in := survey.Select{Message: "Please select which option would you like to choose to resolve: ", Options: options}
 			var selected string
-			withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-			err = testable.AskOne(&in, &selected, withStdio)
+			err = prompt.Form(huh.NewSelect[string]().
+				Title("Please select which option would you like to choose to resolve: ").
+				Options(huh.NewOptions(options...)...).
+				Value(&selected)).Run()
 			if err != nil {
 				return err
 			}

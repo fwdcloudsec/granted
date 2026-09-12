@@ -5,16 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/fwdcloudsec/granted/pkg/securestorage"
-	"github.com/fwdcloudsec/granted/pkg/testable"
 	"github.com/urfave/cli/v2"
 )
 
@@ -220,26 +219,20 @@ var ClearSSOTokensCommand = cli.Command{
 					max = len(k)
 				}
 			}
-			selectionsMap := make(map[string]string)
-			tokenList := []string{}
+			tokens := []huh.Option[string]{}
 			for k, profiles := range startUrlMap {
-				stringKey := fmt.Sprintf("%-*s (%s)", max, k, strings.Join(profiles, ", "))
-				tokenList = append(tokenList, stringKey)
-				selectionsMap[stringKey] = k
+				tokens = append(tokens, huh.NewOption(fmt.Sprintf("%-*s (%s)", max, k, strings.Join(profiles, ", ")), k))
 			}
-			sort.Strings(tokenList)
-			withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-			in := survey.Select{
-				Message: "Select a token to remove from keyring",
-				Options: tokenList,
-			}
+			sort.Slice(tokens, func(i, j int) bool { return tokens[i].Key < tokens[j].Key })
+
 			clio.NewLine()
-			var out string
-			err = testable.AskOne(&in, &out, withStdio)
+			err = prompt.Form(huh.NewSelect[string]().
+				Title("Select a token to remove from keyring").
+				Options(tokens...).
+				Value(&selection)).Run()
 			if err != nil {
 				return err
 			}
-			selection = selectionsMap[out]
 		}
 
 		secureSSOTokenStorage := securestorage.NewSecureSSOTokenStorage()

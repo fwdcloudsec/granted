@@ -1,12 +1,12 @@
 package registry
 
 import (
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/granted/awsmerge"
 	"github.com/fwdcloudsec/granted/pkg/granted/registry/gitregistry"
-	"github.com/fwdcloudsec/granted/pkg/testable"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,25 +26,18 @@ var RemoveCommand = cli.Command{
 			return nil
 		}
 
-		registriesWithNames := []string{}
-
-		for _, r := range gConf.ProfileRegistry.Registries {
-			registriesWithNames = append(registriesWithNames, r.Name)
-		}
-
-		in := survey.Select{Message: "Please select the git repository you would like to unsubscribe:", Options: registriesWithNames}
-		var out string
-		err = testable.AskOne(&in, &out)
-		if err != nil {
-			return err
+		options := make([]huh.Option[grantedConfig.Registry], len(gConf.ProfileRegistry.Registries))
+		for i, r := range gConf.ProfileRegistry.Registries {
+			options[i] = huh.NewOption(r.Name, r)
 		}
 
 		var selectedRegistry grantedConfig.Registry
-
-		for _, r := range gConf.ProfileRegistry.Registries {
-			if r.Name == out {
-				selectedRegistry = r
-			}
+		err = prompt.Form(huh.NewSelect[grantedConfig.Registry]().
+			Title("Please select the git repository you would like to unsubscribe:").
+			Options(options...).
+			Value(&selectedRegistry)).Run()
+		if err != nil {
+			return err
 		}
 
 		reg, err := gitregistry.New(gitregistry.Opts{
@@ -74,7 +67,7 @@ var RemoveCommand = cli.Command{
 			return err
 		}
 
-		err = remove(gConf, out)
+		err = remove(gConf, selectedRegistry.Name)
 		if err != nil {
 			return err
 		}
@@ -84,7 +77,7 @@ var RemoveCommand = cli.Command{
 			return err
 		}
 
-		clio.Successf("Successfully unsubscribed from %s", out)
+		clio.Successf("Successfully unsubscribed from %s", selectedRegistry.Name)
 
 		return nil
 	},

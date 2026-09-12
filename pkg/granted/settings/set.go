@@ -6,10 +6,11 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	"github.com/common-fate/clio"
 	"github.com/common-fate/grab"
 	"github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/urfave/cli/v2"
 )
 
@@ -47,11 +48,10 @@ var SetConfigCommand = cli.Command{
 
 		var selectedFieldName = c.String("setting")
 		if selectedFieldName == "" {
-			p := &survey.Select{
-				Message: "Select the configuration to change",
-				Options: fields,
-			}
-			err = survey.AskOne(p, &selectedFieldName)
+			err = prompt.Form(huh.NewSelect[string]().
+				Title("Select the configuration to change").
+				Options(huh.NewOptions(fields...)...).
+				Value(&selectedFieldName)).Run()
 			if err != nil {
 				return err
 			}
@@ -64,19 +64,18 @@ var SetConfigCommand = cli.Command{
 		}
 		// Prompt the user to update the field
 		var value interface{}
-		var prompt survey.Prompt
 
 		switch selectedField.Kind() {
 		case reflect.Bool:
 			if !c.IsSet("value") {
-				prompt = &survey.Confirm{
-					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
-					Default: selectedField.Value().(bool),
-				}
-				err = survey.AskOne(prompt, &value)
+				boolean := selectedField.Value().(bool)
+				err = prompt.Form(huh.NewConfirm().
+					Title(fmt.Sprintf("Enter new value for %s:", selectedFieldName)).
+					Value(&boolean)).Run()
 				if err != nil {
 					return err
 				}
+				value = boolean
 			} else {
 				valueStr := c.String("value")
 				value, err = strconv.ParseBool(valueStr)
@@ -87,12 +86,10 @@ var SetConfigCommand = cli.Command{
 
 		case reflect.String:
 			if !c.IsSet("value") {
-				var str string
-				prompt = &survey.Input{
-					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
-					Default: selectedField.Value().(string),
-				}
-				err = survey.AskOne(prompt, &str)
+				str := selectedField.Value().(string)
+				err = prompt.Form(huh.NewInput().
+					Title(fmt.Sprintf("Enter new value for %s:", selectedFieldName)).
+					Value(&str)).Run()
 				if err != nil {
 					return err
 				}
@@ -102,11 +99,14 @@ var SetConfigCommand = cli.Command{
 			}
 		case reflect.Int:
 			if !c.IsSet("value") {
-				prompt = &survey.Input{
-					Message: fmt.Sprintf("Enter new value for %s:", selectedFieldName),
-					Default: fmt.Sprintf("%v", selectedField.Value()),
+				str := fmt.Sprintf("%v", selectedField.Value())
+				err = prompt.Form(huh.NewInput().
+					Title(fmt.Sprintf("Enter new value for %s:", selectedFieldName)).
+					Value(&str)).Run()
+				if err != nil {
+					return err
 				}
-				err = survey.AskOne(prompt, &value)
+				value, err = strconv.Atoi(str)
 				if err != nil {
 					return err
 				}

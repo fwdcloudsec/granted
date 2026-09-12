@@ -3,10 +3,10 @@ package requesturl
 import (
 	"fmt"
 	"net/url"
-	"os"
 
-	"github.com/AlecAivazis/survey/v2"
+	"charm.land/huh/v2"
 	grantedConfig "github.com/fwdcloudsec/granted/pkg/config"
+	"github.com/fwdcloudsec/granted/pkg/prompt"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )
@@ -23,12 +23,10 @@ var setRequestURLCommand = cli.Command{
 
 		approvalsURL = c.Args().First()
 		if approvalsURL == "" {
-			in := &survey.Input{
-				Message: "What is the URL of your Common Fate deployment?",
-				Help:    "URL for your Common Fate dashboard from where users can request access \n for e.g: https://example.com",
-			}
-			withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
-			err := survey.AskOne(in, &approvalsURL, withStdio)
+			err := prompt.Form(huh.NewInput().
+				Title("What is the URL of your Common Fate deployment?").
+				Description("URL for your Common Fate dashboard from where users can request access \n for e.g: https://example.com").
+				Value(&approvalsURL)).Run()
 			if err != nil {
 				return err
 			}
