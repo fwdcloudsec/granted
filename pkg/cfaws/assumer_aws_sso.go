@@ -115,10 +115,10 @@ func (c *Profile) SSOLoginWithToken(ctx context.Context, cfg *aws.Config, access
 				aro.RoleSessionName = getRoleSessionNameFromProfile(p)
 				if p.AWSConfig.MFASerial != "" {
 					aro.SerialNumber = &p.AWSConfig.MFASerial
-					aro.TokenProvider = MfaTokenProvider
+					aro.TokenProvider = MfaTokenProviderFor(p)
 				} else if c.AWSConfig.MFASerial != "" {
 					aro.SerialNumber = &c.AWSConfig.MFASerial
-					aro.TokenProvider = MfaTokenProvider
+					aro.TokenProvider = MfaTokenProviderFor(c)
 				}
 				aro.Duration = configOpts.Duration
 				if p.AWSConfig.ExternalID != "" {
