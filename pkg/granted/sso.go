@@ -67,7 +67,7 @@ var GenerateCommand = cli.Command{
 		// load config to load defaults
 		cfg, err := grantedconfig.Load()
 		if err != nil {
-			clio.Errorf("Error reading default config (~/.granted/config)")
+			clio.Errorf("Error reading Granted config: %s", err)
 			return nil
 		}
 
@@ -158,7 +158,7 @@ var PopulateCommand = cli.Command{
 
 		cfg, err := grantedconfig.Load()
 		if err != nil {
-			clio.Errorf("Error reading default config (~/.granted/config)")
+			clio.Errorf("Error reading Granted config: %s", err)
 			return nil
 		}
 
