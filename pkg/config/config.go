@@ -223,7 +223,12 @@ func GrantedConfigFolder() (string, error) {
 	return configDir, nil
 }
 
+// GrantedConfigFilePath returns GRANTED_CONFIG when nonempty, or the default config file path.
 func GrantedConfigFilePath() (string, error) {
+	if configFilePath := os.Getenv("GRANTED_CONFIG"); configFilePath != "" {
+		return configFilePath, nil
+	}
+
 	grantedFolder, err := GrantedConfigFolder()
 	if err != nil {
 		return "", err
