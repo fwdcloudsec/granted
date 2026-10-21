@@ -1,6 +1,6 @@
 module github.com/fwdcloudsec/granted
 
-go 1.25.7
+go 1.26.10
 
 require (
 	github.com/99designs/keyring v1.2.2
