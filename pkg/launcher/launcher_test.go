@@ -151,3 +151,89 @@ func TestForBrowser_OpenLaunchersDoNotForkProcess(t *testing.T) {
 		}
 	}
 }
+
+// On macOS, Firefox-based browsers installed as app bundles are launched
+// through 'open' so they run under their own privacy (TCC) identity rather
+// than the terminal's. forkprocess cannot run 'open'.
+func TestForBrowser_FirefoxAppBundleUsesOpen(t *testing.T) {
+	const url = "ext+granted-containers:name=prod&url=https%3A%2F%2Fconsole.aws.amazon.com%2F"
+
+	saved := goos
+	t.Cleanup(func() { goos = saved })
+
+	tests := []struct {
+		name string
+		goos string
+		key  string
+		path string
+		want []string
+		fork bool
+	}{
+		{
+			name: "firefox_app_bundle_on_darwin",
+			goos: "darwin",
+			key:  browser.FirefoxKey,
+			path: "/Applications/Firefox.app/Contents/MacOS/firefox",
+			want: []string{"open", "-a", "/Applications/Firefox.app", "-u", url},
+		},
+		{
+			name: "zen_app_bundle_with_space_on_darwin",
+			goos: "darwin",
+			key:  browser.ZenKey,
+			path: "/Applications/Zen Browser.app/Contents/MacOS/zen",
+			want: []string{"open", "-a", "/Applications/Zen Browser.app", "-u", url},
+		},
+		{
+			name: "firefox_dev_edition_app_bundle_on_darwin",
+			goos: "darwin",
+			key:  browser.FirefoxDevEditionKey,
+			path: "/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox",
+			want: []string{"open", "-a", "/Applications/Firefox Developer Edition.app", "-u", url},
+		},
+		{
+			name: "firefox_nightly_app_bundle_on_darwin",
+			goos: "darwin",
+			key:  browser.FirefoxNightlyKey,
+			path: "/Applications/Firefox Nightly.app/Contents/MacOS/firefox",
+			want: []string{"open", "-a", "/Applications/Firefox Nightly.app", "-u", url},
+		},
+		{
+			// A bare binary (for example from Homebrew or Nix) has no bundle to hand to 'open'.
+			name: "bare_binary_on_darwin_is_run_directly",
+			goos: "darwin",
+			key:  browser.FirefoxKey,
+			path: "/opt/homebrew/bin/firefox",
+			want: []string{"/opt/homebrew/bin/firefox", "--new-tab", url},
+			fork: true,
+		},
+		{
+			name: "app_bundle_path_on_linux_is_run_directly",
+			goos: "linux",
+			key:  browser.FirefoxKey,
+			path: "/Applications/Firefox.app/Contents/MacOS/firefox",
+			want: []string{"/Applications/Firefox.app/Contents/MacOS/firefox", "--new-tab", url},
+			fork: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			goos = tt.goos
+
+			l, err := ForBrowser(tt.key, tt.path, "")
+			if err != nil {
+				t.Fatalf("ForBrowser() unexpected error = %v", err)
+			}
+			got, err := l.LaunchCommand(url, "")
+			if err != nil {
+				t.Fatalf("LaunchCommand() unexpected error = %v", err)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("LaunchCommand() = %v, want %v", got, tt.want)
+			}
+			if l.UseForkProcess() != tt.fork {
+				t.Errorf("UseForkProcess() = %v, want %v", l.UseForkProcess(), tt.fork)
+			}
+		})
+	}
+}
