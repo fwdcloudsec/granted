@@ -65,6 +65,7 @@ func SyncProfileRegistries(ctx context.Context, interactive bool) error {
 			Name:                    r.Config.Name,
 			PrefixAllProfiles:       r.Config.PrefixAllProfiles,
 			PrefixDuplicateProfiles: r.Config.PrefixDuplicateProfiles,
+			AddAccountIDProfiles:    r.Config.AddAccountIDProfiles,
 		})
 		var dpe awsmerge.DuplicateProfileError
 		if interactive && errors.As(err, &dpe) {
@@ -94,6 +95,7 @@ func SyncProfileRegistries(ctx context.Context, interactive bool) error {
 				Name:                    r.Config.Name,
 				PrefixAllProfiles:       r.Config.PrefixAllProfiles,
 				PrefixDuplicateProfiles: true,
+				AddAccountIDProfiles:    r.Config.AddAccountIDProfiles,
 			})
 			if err != nil {
 				return fmt.Errorf("error after trying to merge profiles again for registry %s: %w", r.Config.Name, err)
