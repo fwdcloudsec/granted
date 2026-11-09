@@ -1,6 +1,7 @@
 package granted
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -9,9 +10,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/common-fate/clio"
+	"github.com/fwdcloudsec/granted/pkg/accessrequest"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/securestorage"
+	sethRetry "github.com/sethvargo/go-retry"
 	"github.com/urfave/cli/v2"
 )
 
@@ -50,7 +53,6 @@ var CredentialProcess = cli.Command{
 		useCache := !cfg.DisableCredentialProcessCache && !cliNoCache
 
 		if useCache {
-			// try and look up session credentials from the secure storage cache.
 			cachedCreds, err := secureSessionCredentialStorage.GetCredentials(profileName)
 			if err != nil {
 				clio.Debugw("error loading cached credentials", "error", err, "profile", profileName)
@@ -59,7 +61,6 @@ var CredentialProcess = cli.Command{
 			} else if cachedCreds.CanExpire && cachedCreds.Expires.Add(-c.Duration("window")).Before(time.Now()) {
 				clio.Debugw("refreshing credentials", "reason", "credentials are expired")
 			} else {
-				// if we get here, the cached session credentials are valid
 				clio.Debugw("credentials found in cache", "expires", cachedCreds.Expires.String(), "canExpire", cachedCreds.CanExpire, "timeNow", time.Now().String(), "refreshIfBeforeNow", cachedCreds.Expires.Add(-c.Duration("window")).String())
 				return printCredentials(*cachedCreds)
 			}
@@ -69,7 +70,6 @@ var CredentialProcess = cli.Command{
 			clio.Debugw("refreshing credentials", "reason", "credential process cache is disabled via config")
 		}
 
-		// purge the credentials from the cache
 		err = secureSessionCredentialStorage.SecureStorage.Clear(profileName)
 		if err != nil {
 			clio.Debugw("error clearing cached credentials", "error", err, "profile", profileName)
@@ -92,7 +92,26 @@ var CredentialProcess = cli.Command{
 
 		credentials, err := profile.AssumeTerminal(c.Context, cfaws.ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: autoLogin, UseAuthorizationCode: cfg.UseAuthorizationCode})
 		if err != nil {
-			return err
+			clio.Debugw("initial assume failed, attempting retry with backoff", "error", err)
+
+			// Retry with exponential backoff in case of transient errors
+			b := sethRetry.NewFibonacci(time.Second)
+			b = sethRetry.WithMaxDuration(time.Second*30, b)
+			retryErr := sethRetry.Do(c.Context, b, func(ctx context.Context) (err error) {
+				credentials, err = profile.AssumeTerminal(c.Context, cfaws.ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: autoLogin})
+				if err != nil {
+					return sethRetry.RetryableError(err)
+				}
+				return nil
+			})
+			if retryErr != nil {
+				clio.Debugw("could not assume role after retries, notifying user to try requesting access", "error", err)
+				saveErr := accessrequest.Profile{Name: profileName}.Save()
+				if saveErr != nil {
+					return saveErr
+				}
+				return errors.New("You don't have access but you can request it with 'granted request latest'")
+			}
 		}
 		if !cfg.DisableCredentialProcessCache {
 			clio.Debugw("storing refreshed credentials in credential process cache", "expires", credentials.Expires.String(), "canExpire", credentials.CanExpire, "timeNow", time.Now().String())

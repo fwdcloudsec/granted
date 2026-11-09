@@ -4,9 +4,10 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/common-fate/grab"
 	"github.com/stretchr/testify/assert"
 )
+
+func ptrString(s string) *string { return &s }
 
 func TestFieldOptions(t *testing.T) {
 	type input struct {
@@ -41,7 +42,7 @@ func TestFieldOptions(t *testing.T) {
 					D *string
 				}{
 					C: "C",
-					D: grab.Ptr("D"),
+					D: ptrString("D"),
 				},
 			},
 			want: []string{"A", "B.C", "B.D"},
