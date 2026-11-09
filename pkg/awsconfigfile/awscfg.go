@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/alessio/shellescape"
 	"gopkg.in/ini.v1"
 )
 
@@ -47,10 +48,10 @@ func (p SSOProfile) ToIni(profileName string, noCredentialProcess bool) any {
 		}
 	}
 
-	credProcess := "granted credential-process --profile " + profileName
+	credProcess := "granted credential-process --profile " + shellescape.Quote(profileName)
 
 	if p.ProviderURL != "" {
-		credProcess += " --url " + p.ProviderURL
+		credProcess += " --url " + shellescape.Quote(p.ProviderURL)
 	}
 
 	return &credentialProcessProfile{
