@@ -4,8 +4,16 @@ import (
 	"time"
 )
 
+// tokenBackend is the storage behind ProviderTokenStorage. SecureStorage
+// implements it; tests substitute a fake to avoid touching the real keyring.
+type tokenBackend interface {
+	Retrieve(key string, target interface{}) error
+	Store(key string, payload interface{}) error
+	Clear(key string) error
+}
+
 type ProviderTokenStorage struct {
-	SecureStorage SecureStorage
+	SecureStorage tokenBackend
 }
 
 type ProviderToken struct {
@@ -20,7 +28,7 @@ type ProviderToken struct {
 
 func NewProviderTokenStorage() ProviderTokenStorage {
 	return ProviderTokenStorage{
-		SecureStorage: SecureStorage{StorageSuffix: "granted-provider-tokens"},
+		SecureStorage: &SecureStorage{StorageSuffix: "granted-provider-tokens"},
 	}
 }
 

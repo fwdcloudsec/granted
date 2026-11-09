@@ -21,12 +21,15 @@ import (
 )
 
 const (
-	latestReleaseURL = "https://api.github.com/repos/fwdcloudsec/granted/releases/latest"
-	releasesURL      = "https://github.com/fwdcloudsec/granted/releases/latest"
-	checkInterval    = 24 * time.Hour
-	requestTimeout   = 3 * time.Second
-	cacheFileName    = "update-check.json"
+	releasesURL    = "https://github.com/fwdcloudsec/granted/releases/latest"
+	checkInterval  = 24 * time.Hour
+	requestTimeout = 3 * time.Second
+	cacheFileName  = "update-check.json"
 )
+
+// latestReleaseURL is a var (not a const) so tests can point it at a local
+// server instead of the real GitHub API.
+var latestReleaseURL = "https://api.github.com/repos/fwdcloudsec/granted/releases/latest"
 
 var (
 	wg      sync.WaitGroup

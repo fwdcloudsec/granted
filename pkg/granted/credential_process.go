@@ -94,17 +94,10 @@ var CredentialProcess = cli.Command{
 		if err != nil {
 			clio.Debugw("initial assume failed, attempting retry with backoff", "error", err)
 
-			// Retry with exponential backoff in case of transient errors
-			b := sethRetry.NewFibonacci(time.Second)
-			b = sethRetry.WithMaxDuration(time.Second*30, b)
-			retryErr := sethRetry.Do(c.Context, b, func(ctx context.Context) (err error) {
-				credentials, err = profile.AssumeTerminal(c.Context, cfaws.ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: autoLogin})
-				if err != nil {
-					return sethRetry.RetryableError(err)
-				}
-				return nil
+			credentials, err = assumeWithRetry(c.Context, assumeRetryMaxDuration, func(ctx context.Context) (aws.Credentials, error) {
+				return profile.AssumeTerminal(ctx, cfaws.ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: autoLogin})
 			})
-			if retryErr != nil {
+			if err != nil {
 				clio.Debugw("could not assume role after retries, notifying user to try requesting access", "error", err)
 				saveErr := accessrequest.Profile{Name: profileName}.Save()
 				if saveErr != nil {
@@ -122,6 +115,29 @@ var CredentialProcess = cli.Command{
 
 		return printCredentials(credentials)
 	},
+}
+
+// assumeRetryMaxDuration bounds how long CredentialProcess retries a failed
+// assume before giving up and suggesting 'granted request latest'.
+const assumeRetryMaxDuration = 30 * time.Second
+
+// assumeWithRetry retries assume with Fibonacci backoff, in case the initial
+// failure was transient (e.g. a brief network blip or in-flight access grant).
+func assumeWithRetry(ctx context.Context, maxDuration time.Duration, assume func(ctx context.Context) (aws.Credentials, error)) (aws.Credentials, error) {
+	var creds aws.Credentials
+
+	b := sethRetry.NewFibonacci(time.Second)
+	b = sethRetry.WithMaxDuration(maxDuration, b)
+	err := sethRetry.Do(ctx, b, func(ctx context.Context) error {
+		var err error
+		creds, err = assume(ctx)
+		if err != nil {
+			return sethRetry.RetryableError(err)
+		}
+		return nil
+	})
+
+	return creds, err
 }
 
 func printCredentials(creds aws.Credentials) error {

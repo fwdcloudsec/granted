@@ -69,7 +69,7 @@ const (
 	GrantStatusActive      GrantStatus = "active"
 	GrantStatusPending     GrantStatus = "pending"
 	GrantStatusClosed      GrantStatus = "closed"
-	GrantStatusUnspecified  GrantStatus = "unspecified"
+	GrantStatusUnspecified GrantStatus = "unspecified"
 )
 
 // Unauthorized is an interface that errors can implement to indicate
