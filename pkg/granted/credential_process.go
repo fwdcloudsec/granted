@@ -1,6 +1,7 @@
 package granted
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -9,9 +10,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/common-fate/clio"
+	"github.com/fwdcloudsec/granted/pkg/accessrequest"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/securestorage"
+	sethRetry "github.com/sethvargo/go-retry"
 	"github.com/urfave/cli/v2"
 )
 
@@ -50,7 +53,6 @@ var CredentialProcess = cli.Command{
 		useCache := !cfg.DisableCredentialProcessCache && !cliNoCache
 
 		if useCache {
-			// try and look up session credentials from the secure storage cache.
 			cachedCreds, err := secureSessionCredentialStorage.GetCredentials(profileName)
 			if err != nil {
 				clio.Debugw("error loading cached credentials", "error", err, "profile", profileName)
@@ -59,7 +61,6 @@ var CredentialProcess = cli.Command{
 			} else if cachedCreds.CanExpire && cachedCreds.Expires.Add(-c.Duration("window")).Before(time.Now()) {
 				clio.Debugw("refreshing credentials", "reason", "credentials are expired")
 			} else {
-				// if we get here, the cached session credentials are valid
 				clio.Debugw("credentials found in cache", "expires", cachedCreds.Expires.String(), "canExpire", cachedCreds.CanExpire, "timeNow", time.Now().String(), "refreshIfBeforeNow", cachedCreds.Expires.Add(-c.Duration("window")).String())
 				return printCredentials(*cachedCreds)
 			}
@@ -69,7 +70,6 @@ var CredentialProcess = cli.Command{
 			clio.Debugw("refreshing credentials", "reason", "credential process cache is disabled via config")
 		}
 
-		// purge the credentials from the cache
 		err = secureSessionCredentialStorage.SecureStorage.Clear(profileName)
 		if err != nil {
 			clio.Debugw("error clearing cached credentials", "error", err, "profile", profileName)
@@ -92,7 +92,19 @@ var CredentialProcess = cli.Command{
 
 		credentials, err := profile.AssumeTerminal(c.Context, cfaws.ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: autoLogin, UseAuthorizationCode: cfg.UseAuthorizationCode})
 		if err != nil {
-			return err
+			clio.Debugw("initial assume failed, attempting retry with backoff", "error", err)
+
+			credentials, err = assumeWithRetry(c.Context, assumeRetryMaxDuration, func(ctx context.Context) (aws.Credentials, error) {
+				return profile.AssumeTerminal(ctx, cfaws.ConfigOpts{Duration: duration, UsingCredentialProcess: true, CredentialProcessAutoLogin: autoLogin})
+			})
+			if err != nil {
+				clio.Debugw("could not assume role after retries, notifying user to try requesting access", "error", err)
+				saveErr := accessrequest.Profile{Name: profileName}.Save()
+				if saveErr != nil {
+					return saveErr
+				}
+				return errors.New("You don't have access but you can request it with 'granted request latest'")
+			}
 		}
 		if !cfg.DisableCredentialProcessCache {
 			clio.Debugw("storing refreshed credentials in credential process cache", "expires", credentials.Expires.String(), "canExpire", credentials.CanExpire, "timeNow", time.Now().String())
@@ -103,6 +115,29 @@ var CredentialProcess = cli.Command{
 
 		return printCredentials(credentials)
 	},
+}
+
+// assumeRetryMaxDuration bounds how long CredentialProcess retries a failed
+// assume before giving up and suggesting 'granted request latest'.
+const assumeRetryMaxDuration = 30 * time.Second
+
+// assumeWithRetry retries assume with Fibonacci backoff, in case the initial
+// failure was transient (e.g. a brief network blip or in-flight access grant).
+func assumeWithRetry(ctx context.Context, maxDuration time.Duration, assume func(ctx context.Context) (aws.Credentials, error)) (aws.Credentials, error) {
+	var creds aws.Credentials
+
+	b := sethRetry.NewFibonacci(time.Second)
+	b = sethRetry.WithMaxDuration(maxDuration, b)
+	err := sethRetry.Do(ctx, b, func(ctx context.Context) error {
+		var err error
+		creds, err = assume(ctx)
+		if err != nil {
+			return sethRetry.RetryableError(err)
+		}
+		return nil
+	})
+
+	return creds, err
 }
 
 func printCredentials(creds aws.Credentials) error {
