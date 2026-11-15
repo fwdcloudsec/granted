@@ -2,11 +2,12 @@ package granted
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/pkg/errors"
 
 	"github.com/common-fate/clio"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
@@ -49,15 +50,19 @@ var CredentialProcess = cli.Command{
 		cliNoCache := c.Bool("no-cache")
 		useCache := !cfg.DisableCredentialProcessCache && !cliNoCache
 
+		// staleCached is true when an entry exists in the cache and must be purged.
+		staleCached := false
 		if useCache {
 			// try and look up session credentials from the secure storage cache.
 			cachedCreds, err := secureSessionCredentialStorage.GetCredentials(profileName)
 			if err != nil {
 				clio.Debugw("error loading cached credentials", "error", err, "profile", profileName)
+				staleCached = !errors.Is(err, keyring.ErrKeyNotFound)
 			} else if cachedCreds == nil {
 				clio.Debugw("refreshing credentials", "reason", "cachedCreds was nil")
 			} else if cachedCreds.CanExpire && cachedCreds.Expires.Add(-c.Duration("window")).Before(time.Now()) {
 				clio.Debugw("refreshing credentials", "reason", "credentials are expired")
+				staleCached = true
 			} else {
 				// if we get here, the cached session credentials are valid
 				clio.Debugw("credentials found in cache", "expires", cachedCreds.Expires.String(), "canExpire", cachedCreds.CanExpire, "timeNow", time.Now().String(), "refreshIfBeforeNow", cachedCreds.Expires.Add(-c.Duration("window")).String())
@@ -67,12 +72,16 @@ var CredentialProcess = cli.Command{
 
 		if !useCache {
 			clio.Debugw("refreshing credentials", "reason", "credential process cache is disabled via config")
+			staleCached = true
 		}
 
-		// purge the credentials from the cache
-		err = secureSessionCredentialStorage.SecureStorage.Clear(profileName)
-		if err != nil {
-			clio.Debugw("error clearing cached credentials", "error", err, "profile", profileName)
+		// purge stale credentials from the cache. A miss needs no purge, and every
+		// secure storage round trip costs a keychain call.
+		if staleCached {
+			err = secureSessionCredentialStorage.SecureStorage.Clear(profileName)
+			if err != nil {
+				clio.Debugw("error clearing cached credentials", "error", err, "profile", profileName)
+			}
 		}
 
 		profiles, err := cfaws.LoadProfiles()
@@ -94,7 +103,11 @@ var CredentialProcess = cli.Command{
 		if err != nil {
 			return err
 		}
-		if !cfg.DisableCredentialProcessCache {
+		// A root aws login profile already holds its live credentials in its own
+		// store (secure storage or the CLI cache) and they last only 15 minutes, so a
+		// second copy here would be stale before it was ever read. Chained roles are
+		// cached as usual.
+		if !cfg.DisableCredentialProcessCache && !cfaws.IsLoginRootProfile(profile) {
 			clio.Debugw("storing refreshed credentials in credential process cache", "expires", credentials.Expires.String(), "canExpire", credentials.CanExpire, "timeNow", time.Now().String())
 			if err := secureSessionCredentialStorage.StoreCredentials(profileName, credentials); err != nil {
 				return err
@@ -118,7 +131,7 @@ func printCredentials(creds aws.Credentials) error {
 
 	jsonOut, err := json.Marshal(out)
 	if err != nil {
-		return errors.Wrap(err, "marshalling session credentials")
+		return fmt.Errorf("marshalling session credentials: %w", err)
 	}
 
 	fmt.Println(string(jsonOut))
