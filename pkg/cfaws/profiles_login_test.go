@@ -25,6 +25,19 @@ duration_seconds = 1800
 
 [profile plain-iam]
 region = us-east-1
+
+[profile managed-login]
+granted_login_session = ` + testLoginSession + `
+credential_process = granted credential-process --profile=managed-login
+region = us-east-1
+
+[profile managed-role]
+role_arn = ` + testLoginRoleARN + `
+source_profile = managed-login
+
+[profile managed-nocp]
+granted_login_session = ` + testLoginSession + `
+region = eu-west-1
 `
 )
 

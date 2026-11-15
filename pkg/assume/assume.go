@@ -22,6 +22,7 @@ import (
 	"github.com/common-fate/clio/ansi"
 	"github.com/common-fate/clio/clierr"
 	"github.com/fatih/color"
+	"github.com/fwdcloudsec/granted/internal/build"
 	"github.com/fwdcloudsec/granted/pkg/assumeprint"
 	"github.com/fwdcloudsec/granted/pkg/browser"
 	"github.com/fwdcloudsec/granted/pkg/cfaws"
@@ -477,7 +478,7 @@ func AssumeCommand(c *cli.Context) error {
 			return nil
 		}
 
-		if profile.RawConfig != nil && profile.RawConfig.HasKey("credential_process") && (assumeFlags.Bool("export-all-env-vars") || cfg.DefaultExportAllEnvVar) {
+		if profileSelfRefreshes(profile) && (assumeFlags.Bool("export-all-env-vars") || cfg.DefaultExportAllEnvVar) {
 			output := PrepareStringsForShellScript([]string{creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken, profile.Name, region, sessionExpiration, "true", profile.SSOStartURL(), profile.AWSConfig.SSORoleName, profile.SSORegion(), profile.AWSConfig.SSOAccountID, ""})
 			fmt.Printf("GrantedAssume %s %s %s %s %s %s %s %s %s %s %s %s", output...)
 			return nil
@@ -487,14 +488,16 @@ func AssumeCommand(c *cli.Context) error {
 		// to export more environment variables, add then in the assume and assume.fish scripts then append them to this output preparation function
 		// the shell script treats "None" as an empty string and will not set a value for that positional output
 
-		// If the profile uses "credential_process" to source credential externally then do not set accessKeyId, secretAccessKey, sessionToken
-		// so that aws cli automatically refreshes credential when they expire.
-		if profile.RawConfig != nil && profile.RawConfig.HasKey("credential_process") {
+		// If the profile uses "credential_process" or an "aws login" session to source credentials externally then do not set
+		// accessKeyId, secretAccessKey, sessionToken so that aws cli automatically refreshes credentials when they expire.
+		if profileSelfRefreshes(profile) {
 			output := PrepareStringsForShellScript([]string{"", "", "", profile.Name, region, "", "", "", "", "", "", ""})
 			fmt.Printf("GrantedAssume %s %s %s %s %s %s %s %s %s %s %s %s", output...)
 
 			return nil
 		}
+
+		warnIfManagedLoginLacksCredentialProcess(profile)
 
 		if assumeFlags.Bool("sso") {
 			output := PrepareStringsForShellScript([]string{creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken, "", region, sessionExpiration, "true", profile.SSOStartURL(), profile.AWSConfig.SSORoleName, profile.SSORegion(), profile.AWSConfig.SSOAccountID, ""})
@@ -513,6 +516,36 @@ func AssumeCommand(c *cli.Context) error {
 		fmt.Printf("GrantedAssume %s %s %s %s %s %s %s %s %s %s %s %s", output...)
 	}
 	return nil
+}
+
+// profileSelfRefreshes reports whether the AWS CLI and SDKs can refresh the profile's
+// credentials themselves. For such profiles assume exports only AWS_PROFILE (and the
+// region) rather than short-lived keys, unless the user asks for all env vars.
+// This is true for credential_process profiles and for root `aws login` profiles,
+// whose access tokens last 15 minutes. Roles chained from a login profile export
+// real keys as usual, since the CLI cannot resolve that chain by itself.
+func profileSelfRefreshes(profile *cfaws.Profile) bool {
+	if profile.RawConfig != nil && profile.RawConfig.HasKey("credential_process") {
+		return true
+	}
+	if profile.ProfileType == cfaws.ProfileTypeAWSLogin && profile.AWSConfig.RoleARN == "" {
+		// A native login_session profile refreshes from the AWS CLI's own cache. A
+		// Granted-managed session without credential_process has nothing the CLI could
+		// refresh from, so its credentials are exported as plain keys.
+		return !cfaws.IsManagedLoginProfile(profile)
+	}
+	return false
+}
+
+// warnIfManagedLoginLacksCredentialProcess tells the user when a Granted-managed
+// login profile exports raw 15 minute keys because the CLI cannot call back into
+// Granted for refreshes.
+func warnIfManagedLoginLacksCredentialProcess(profile *cfaws.Profile) {
+	if !cfaws.IsManagedLoginProfile(profile) || profile.AWSConfig.RoleARN != "" || profile.RawConfig.HasKey("credential_process") {
+		return
+	}
+	clio.Warnf("Profile %s has no credential_process, so the exported credentials expire in about 15 minutes and cannot be refreshed", profile.Name)
+	clio.Infof("Add 'credential_process = %s credential-process --profile=%s' to the profile so the AWS CLI refreshes through Granted", build.GrantedBinaryName(), profile.Name)
 }
 
 // PrepareCredentialsForShellScript will set empty values to "None", this is required by the shell script to identify which variables to unset

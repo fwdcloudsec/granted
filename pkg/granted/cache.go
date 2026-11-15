@@ -26,6 +26,7 @@ var listCommand = cli.Command{
 			"aws-iam-credentials": securestorage.NewSecureIAMCredentialStorage().SecureStorage,
 			"sso-token":           securestorage.NewSecureSSOTokenStorage().SecureStorage,
 			"session-credentials": securestorage.NewSecureSessionCredentialStorage().SecureStorage,
+			"login-session":       securestorage.NewSecureLoginSessionStorage().SecureStorage,
 		}
 
 		tw := tabwriter.NewWriter(os.Stderr, 10, 1, 5, ' ', 0)
@@ -64,6 +65,7 @@ var clearCommand = cli.Command{
 			"aws-iam-credentials": securestorage.NewSecureIAMCredentialStorage().SecureStorage,
 			"sso-token":           securestorage.NewSecureSSOTokenStorage().SecureStorage,
 			"session-credentials": securestorage.NewSecureSessionCredentialStorage().SecureStorage,
+			"login-session":       securestorage.NewSecureLoginSessionStorage().SecureStorage,
 		}
 
 		clearAll := c.Bool("all")
@@ -94,7 +96,7 @@ var clearCommand = cli.Command{
 		// store the credentials in secure storage
 		selectedStorage, ok := storageToNameMap[selection]
 		if !ok {
-			return errors.New("please specify a valid storage to clear using --storage, for example: '--storage=session-credentials'. valid storages are: [aws-iam-credentials, sso-token, session-credentials]")
+			return errors.New("please specify a valid storage to clear using --storage, for example: '--storage=session-credentials'. valid storages are: [aws-iam-credentials, sso-token, session-credentials, login-session]")
 		}
 
 		keys, err := selectedStorage.ListKeys()

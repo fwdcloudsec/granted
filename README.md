@@ -36,6 +36,19 @@ Granted supports MacOS, Linux, and Windows. Our Windows support is less extensiv
 
 Currently Granted supports accessing roles in AWS. If you'd like to see support for another cloud provider please [open an issue](https://github.com/fwdcloudsec/granted/issues/new)!
 
+Granted works with profiles backed by IAM Identity Center (SSO), IAM users, `credential_process`, and `aws login` sessions (AWS CLI 2.32.0 or later; Granted runs `aws login` for you when the session is missing or expired), plus role chaining via `source_profile` on top of any of these.
+
+To keep an `aws login` session in your keychain instead of the AWS CLI's plaintext cache, declare the profile with `granted_login_session` and route the CLI through Granted:
+
+```ini
+[profile personal]
+granted_login_session = arn:aws:iam::123456789012:user/alice
+credential_process    = granted credential-process --profile=personal
+region                = us-east-1
+```
+
+Then `assume personal` signs you in (once per 12 hour session) and refreshes the 15 minute credentials from secure storage for as long as the session lasts. Profiles that `aws login` created itself (`login_session`) also work, using the CLI's own cache.
+
 ## Documentation
 
 Get started by [reading our documentation](https://docs.granted.dev/getting-started).

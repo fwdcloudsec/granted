@@ -411,7 +411,9 @@ func (p *Profiles) LoadInitialisedProfile(ctx context.Context, profile string) (
 		}
 
 		return pr, nil
-	} else {
+	} else if !pr.RawConfig.HasKey(GrantedLoginSessionKey) {
+		// A Granted-managed aws login profile also points credential_process at Granted,
+		// but it is not an imported IAM user; it is initialised by the default flow below.
 		for _, v := range pr.RawConfig.Keys() {
 			if v.Name() == "credential_process" && strings.HasPrefix(v.Value(), build.GrantedBinaryName()) {
 				awsConfig, err := config.LoadSharedConfigProfile(ctx, pr.Name, func(lsco *config.LoadSharedConfigOptions) { lsco.ConfigFiles = []string{pr.File} })

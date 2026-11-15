@@ -18,6 +18,7 @@ require (
 
 require (
 	github.com/alessio/shellescape v1.4.2
+	github.com/aws/aws-sdk-go-v2/service/signin v1.12.4
 	github.com/common-fate/clio v1.2.3
 	github.com/common-fate/grab v1.3.0
 	github.com/fatih/color v1.16.0
@@ -34,7 +35,6 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.24 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.12.4 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
