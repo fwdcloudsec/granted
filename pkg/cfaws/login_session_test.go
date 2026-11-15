@@ -26,6 +26,8 @@ type fakeLoginStore struct {
 	sessions map[string]securestorage.LoginSession
 	getErr   error
 	stores   int
+	// newStores counts the stores of freshly captured sessions.
+	newStores int
 }
 
 func (f *fakeLoginStore) GetSession(session string) (*securestorage.LoginSession, error) {
@@ -45,6 +47,14 @@ func (f *fakeLoginStore) StoreSession(session string, t securestorage.LoginSessi
 	}
 	f.stores++
 	f.sessions[session] = t
+	return nil
+}
+
+func (f *fakeLoginStore) StoreNewSession(session string, t securestorage.LoginSession) error {
+	if err := f.StoreSession(session, t); err != nil {
+		return err
+	}
+	f.newStores++
 	return nil
 }
 
@@ -204,6 +214,7 @@ func TestManagedLogin_NoSession_CapturesLogin(t *testing.T) {
 	require.True(t, ok, "session stored in secure storage")
 	assert.Equal(t, "CAPTURED", stored.AccessToken.AccessKeyID)
 	assert.Equal(t, "us-east-1", stored.SignInRegion, "region recorded for later refreshes")
+	assert.Equal(t, 1, store.newStores, "a captured session is stored as a new session")
 
 	_, statErr := os.Stat(tmpDir)
 	assert.True(t, os.IsNotExist(statErr), "capture dir removed after login")
@@ -320,6 +331,7 @@ func TestManagedLogin_RefreshesNearExpiry(t *testing.T) {
 	assert.Equal(t, "NEWREFRESH", stored.RefreshToken)
 	assert.Equal(t, "ap-southeast-2", stored.SignInRegion)
 	assert.Equal(t, 1, store.stores)
+	assert.Equal(t, 0, store.newStores, "a refresh updates the existing session")
 }
 
 func TestManagedLogin_RefreshKeepsRefreshTokenWhenNotRotated(t *testing.T) {
@@ -351,6 +363,7 @@ func TestManagedLogin_SessionExpired_TriggersLogin(t *testing.T) {
 	assert.Len(t, *calls, 1)
 	assert.Equal(t, "FRESH", creds.AccessKeyID)
 	assert.Equal(t, "FRESH", store.sessions[testLoginSession].AccessToken.AccessKeyID)
+	assert.Equal(t, 1, store.newStores, "a re-login replaces the session")
 }
 
 func TestManagedLogin_OtherRefreshError_NoLogin(t *testing.T) {

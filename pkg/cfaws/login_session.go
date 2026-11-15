@@ -43,6 +43,7 @@ const loginTempMaxAge = time.Hour
 type loginSessionStore interface {
 	GetSession(session string) (*securestorage.LoginSession, error)
 	StoreSession(session string, t securestorage.LoginSession) error
+	StoreNewSession(session string, t securestorage.LoginSession) error
 	ClearSession(session string) error
 }
 
@@ -121,7 +122,7 @@ func loadManagedLoginCreds(ctx context.Context, root *Profile, configOpts Config
 	if err != nil {
 		return aws.Credentials{}, err
 	}
-	if err := store.StoreSession(session, *captured); err != nil {
+	if err := store.StoreNewSession(session, *captured); err != nil {
 		return aws.Credentials{}, fmt.Errorf("storing login session for profile %s in secure storage: %w", root.Name, err)
 	}
 	clio.Debugw("stored login session in secure storage", "profile", root.Name, "session", session, "expires", captured.AccessToken.ExpiresAt)
