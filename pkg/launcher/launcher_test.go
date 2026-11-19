@@ -151,3 +151,99 @@ func TestForBrowser_OpenLaunchersDoNotForkProcess(t *testing.T) {
 		}
 	}
 }
+
+func useHostOS(t *testing.T, goos string) {
+	t.Helper()
+	original := hostOS
+	hostOS = goos
+	t.Cleanup(func() { hostOS = original })
+}
+
+// Run directly from a terminal, macOS blocks Firefox from reading its own profile.
+func TestForBrowser_FirefoxFamilyOpensAppBundleOnMacOS(t *testing.T) {
+	useHostOS(t, "darwin")
+	const url = "ext+granted-containers:name=dev&url=https%3A%2F%2Fconsole.aws.amazon.com"
+
+	tests := []struct {
+		key        string
+		path       string
+		wantBundle string
+	}{
+		{browser.FirefoxKey, "/Applications/Firefox.app/Contents/MacOS/firefox", "/Applications/Firefox.app"},
+		{browser.WaterfoxKey, "/Applications/Waterfox.app/Contents/MacOS/waterfox", "/Applications/Waterfox.app"},
+		{browser.FirefoxDevEditionKey, "/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox", "/Applications/Firefox Developer Edition.app"},
+		{browser.FirefoxNightlyKey, "/Applications/Firefox Nightly.app/Contents/MacOS/firefox", "/Applications/Firefox Nightly.app"},
+		{browser.ZenKey, "/Applications/Zen.app/Contents/MacOS/zen", "/Applications/Zen.app"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.key, func(t *testing.T) {
+			l, err := ForBrowser(tt.key, tt.path, "")
+			if err != nil {
+				t.Fatalf("ForBrowser() unexpected error = %v", err)
+			}
+
+			got, err := l.LaunchCommand(url, "")
+			if err != nil {
+				t.Fatalf("LaunchCommand() unexpected error = %v", err)
+			}
+			want := []string{browser.OpenCommand(), "-a", tt.wantBundle, url}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("LaunchCommand() = %v, want %v", got, want)
+			}
+			if l.UseForkProcess() {
+				t.Error("UseForkProcess() = true, want false")
+			}
+		})
+	}
+}
+
+func TestForBrowser_FirefoxRunsExecutableDirectly(t *testing.T) {
+	const url = "https://commonfate.io"
+
+	tests := []struct {
+		name   string
+		hostOS string
+		path   string
+	}{
+		{
+			// For example the Homebrew wrapper script, which has no app bundle to open.
+			name:   "macos_path_outside_an_app_bundle",
+			hostOS: "darwin",
+			path:   "/opt/homebrew/bin/firefox",
+		},
+		{
+			name:   "linux",
+			hostOS: "linux",
+			path:   "/usr/bin/firefox",
+		},
+		{
+			name:   "windows",
+			hostOS: "windows",
+			path:   `C:\Program Files\Mozilla Firefox\firefox.exe`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			useHostOS(t, tt.hostOS)
+
+			l, err := ForBrowser(browser.FirefoxKey, tt.path, "")
+			if err != nil {
+				t.Fatalf("ForBrowser() unexpected error = %v", err)
+			}
+
+			got, err := l.LaunchCommand(url, "")
+			if err != nil {
+				t.Fatalf("LaunchCommand() unexpected error = %v", err)
+			}
+			want := []string{tt.path, "--new-tab", url}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("LaunchCommand() = %v, want %v", got, want)
+			}
+			if !l.UseForkProcess() {
+				t.Error("UseForkProcess() = false, want true")
+			}
+		})
+	}
+}
