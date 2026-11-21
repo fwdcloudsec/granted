@@ -5,11 +5,7 @@ type FirefoxDevEdition struct {
 }
 
 func (l FirefoxDevEdition) LaunchCommand(url string, profile string) ([]string, error) {
-	return []string{
-		l.ExecutablePath,
-		"--new-tab",
-		url,
-	}, nil
+	return firefoxLaunchCommand(l.ExecutablePath, url), nil
 }
 
-func (l FirefoxDevEdition) UseForkProcess() bool { return true }
+func (l FirefoxDevEdition) UseForkProcess() bool { return macAppBundle(l.ExecutablePath) == "" }

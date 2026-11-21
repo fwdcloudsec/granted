@@ -5,11 +5,7 @@ type Zen struct {
 }
 
 func (l Zen) LaunchCommand(url string, profile string) ([]string, error) {
-	return []string{
-		l.ExecutablePath,
-		"--new-tab",
-		url,
-	}, nil
+	return firefoxLaunchCommand(l.ExecutablePath, url), nil
 }
 
-func (l Zen) UseForkProcess() bool { return true }
+func (l Zen) UseForkProcess() bool { return macAppBundle(l.ExecutablePath) == "" }
