@@ -32,8 +32,11 @@ func openBrowser(url string, browserProfile string) error {
 		return openWithCustomPath(config.CustomSSOBrowserPath, url, browserProfile)
 	}
 
-	defaultbrowser.Stdout = os.Stderr
-	defaultbrowser.Stderr = os.Stderr
+	// OpenURL waits for the opener to exit. If the opener inherits the
+	// terminal, a terminal browser such as lynx runs interactively and blocks
+	// the login. Nil connects the output to the null device.
+	defaultbrowser.Stdout = nil
+	defaultbrowser.Stderr = nil
 	return defaultbrowser.OpenURL(url)
 }
 
