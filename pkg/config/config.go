@@ -75,12 +75,13 @@ type Config struct {
 	ProfileRegistryURLS []string `toml:",omitempty"`
 	ProfileRegistry     struct {
 		// add any global configuration to profile registry here.
-		PrefixAllProfiles       bool
-		PrefixDuplicateProfiles bool
-		SessionName             string            `toml:",omitempty"`
-		RequiredKeys            map[string]string `toml:",omitempty"`
-		Variables               map[string]string `toml:",omitempty"`
-		Registries              []Registry        `toml:",omitempty"`
+		PrefixAllProfiles          bool
+		PrefixDuplicateProfiles    bool
+		SessionName                string            `toml:",omitempty"`
+		RequiredKeys               map[string]string `toml:",omitempty"`
+		Variables                  map[string]string `toml:",omitempty"`
+		Registries                 []Registry        `toml:",omitempty"`
+		AllowedCredentialProcesses []string          `toml:",omitempty"`
 	} `toml:",omitempty"`
 
 	// CredentialProcessAutoLogin, if 'true', will automatically attempt to
