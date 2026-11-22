@@ -133,6 +133,49 @@ func (p *Profiles) Profile(profile string) (*Profile, error) {
 	return nil, ErrProfileNotFound
 }
 
+// sourceIsLoginProfile reports whether the named profile is an `aws login` profile.
+// It inspects the raw config because the source may not be initialised yet.
+func (p *Profiles) sourceIsLoginProfile(name string) bool {
+	src, ok := p.profiles[name]
+	if !ok || src.RawConfig == nil {
+		return false
+	}
+	return src.RawConfig.HasKey("login_session")
+}
+
+// sharedConfigFromRawSection builds the subset of config.SharedConfig that Granted's
+// own role chaining uses, directly from a raw [profile] section. It is only used when
+// the SDK refuses to parse a role profile whose source_profile is an `aws login` profile.
+func sharedConfigFromRawSection(name string, section *ini.Section) (config.SharedConfig, error) {
+	if section == nil {
+		return config.SharedConfig{}, fmt.Errorf("profile %s has no raw config", name)
+	}
+	value := func(key string) string {
+		if !section.HasKey(key) {
+			return ""
+		}
+		return strings.TrimSpace(section.Key(key).Value())
+	}
+	cfg := config.SharedConfig{
+		Profile:           name,
+		RoleARN:           value("role_arn"),
+		SourceProfileName: value("source_profile"),
+		Region:            value("region"),
+		MFASerial:         value("mfa_serial"),
+		ExternalID:        value("external_id"),
+		RoleSessionName:   value("role_session_name"),
+	}
+	if v := value("duration_seconds"); v != "" {
+		seconds, err := section.Key("duration_seconds").Int()
+		if err != nil {
+			return config.SharedConfig{}, fmt.Errorf("profile %s: invalid duration_seconds %q: %w", name, v, err)
+		}
+		d := time.Duration(seconds) * time.Second
+		cfg.RoleDurationSeconds = &d
+	}
+	return cfg, nil
+}
+
 type ConfigFileLoader interface {
 	Load() (*ini.File, error)
 	Path() string
@@ -368,7 +411,9 @@ func (p *Profiles) LoadInitialisedProfile(ctx context.Context, profile string) (
 		}
 
 		return pr, nil
-	} else {
+	} else if !pr.RawConfig.HasKey(GrantedLoginSessionKey) {
+		// A Granted-managed aws login profile also points credential_process at Granted,
+		// but it is not an imported IAM user; it is initialised by the default flow below.
 		for _, v := range pr.RawConfig.Keys() {
 			if v.Name() == "credential_process" && strings.HasPrefix(v.Value(), build.GrantedBinaryName()) {
 				awsConfig, err := config.LoadSharedConfigProfile(ctx, pr.Name, func(lsco *config.LoadSharedConfigOptions) { lsco.ConfigFiles = []string{pr.File} })
@@ -451,6 +496,18 @@ func (p *Profile) init(ctx context.Context, profiles *Profiles, depth int) error
 		p.Initialised = true
 
 		cfg, err := config.LoadSharedConfigProfile(ctx, p.Name, func(lsco *config.LoadSharedConfigOptions) { lsco.ConfigFiles = []string{p.File} })
+		if err != nil {
+			// The SDK refuses an `aws login` profile as a source_profile because its
+			// hasCredentials() check does not know about login_session (see
+			// https://github.com/aws/aws-sdk-go-v2/issues/3446). Granted chains roles
+			// itself, so rebuild the fields it needs from the raw section instead.
+			// TODO: remove this fallback once the SDK accepts login_session sources.
+			var roleErr config.SharedConfigAssumeRoleError
+			if errors.As(err, &roleErr) && roleErr.Err == nil && profiles.sourceIsLoginProfile(roleErr.Profile) {
+				clio.Debugw("source_profile is an aws login profile, loading role profile from raw config", "profile", p.Name, "source", roleErr.Profile)
+				cfg, err = sharedConfigFromRawSection(p.Name, p.RawConfig)
+			}
+		}
 		if err != nil {
 			return err
 		}

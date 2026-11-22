@@ -12,6 +12,29 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// cacheStore is what the cache commands need from a secure storage.
+type cacheStore interface {
+	ListKeys() ([]string, error)
+	Clear(key string) error
+}
+
+// cacheStores returns the stores the cache commands manage, by storage name. The
+// login session store is used through its own type rather than its SecureStorage,
+// because on Windows Credential Manager a session is kept as an encrypted file plus
+// a key, and listing or clearing has to cover both.
+func cacheStores() map[string]cacheStore {
+	iam := securestorage.NewSecureIAMCredentialStorage().SecureStorage
+	sso := securestorage.NewSecureSSOTokenStorage().SecureStorage
+	sessions := securestorage.NewSecureSessionCredentialStorage().SecureStorage
+	login := securestorage.NewSecureLoginSessionStorage()
+	return map[string]cacheStore{
+		"aws-iam-credentials": &iam,
+		"sso-token":           &sso,
+		"session-credentials": &sessions,
+		"login-session":       &login,
+	}
+}
+
 var CacheCommand = cli.Command{
 	Name:        "cache",
 	Usage:       "Manage your cached credentials that are stored in secure storage",
@@ -22,11 +45,7 @@ var listCommand = cli.Command{
 	Name:  "list",
 	Usage: "List currently cached credentials and secure storage type",
 	Action: func(c *cli.Context) error {
-		storageToNameMap := map[string]securestorage.SecureStorage{
-			"aws-iam-credentials": securestorage.NewSecureIAMCredentialStorage().SecureStorage,
-			"sso-token":           securestorage.NewSecureSSOTokenStorage().SecureStorage,
-			"session-credentials": securestorage.NewSecureSessionCredentialStorage().SecureStorage,
-		}
+		storageToNameMap := cacheStores()
 
 		tw := tabwriter.NewWriter(os.Stderr, 10, 1, 5, ' ', 0)
 		headers := strings.Join([]string{"STORAGE TYPE", "KEY"}, "\t")
@@ -60,11 +79,7 @@ var clearCommand = cli.Command{
 		&cli.StringFlag{Name: "storage", Usage: "Specify the storage type"},
 	},
 	Action: func(c *cli.Context) error {
-		storageToNameMap := map[string]securestorage.SecureStorage{
-			"aws-iam-credentials": securestorage.NewSecureIAMCredentialStorage().SecureStorage,
-			"sso-token":           securestorage.NewSecureSSOTokenStorage().SecureStorage,
-			"session-credentials": securestorage.NewSecureSessionCredentialStorage().SecureStorage,
-		}
+		storageToNameMap := cacheStores()
 
 		clearAll := c.Bool("all")
 
@@ -94,7 +109,7 @@ var clearCommand = cli.Command{
 		// store the credentials in secure storage
 		selectedStorage, ok := storageToNameMap[selection]
 		if !ok {
-			return errors.New("please specify a valid storage to clear using --storage, for example: '--storage=session-credentials'. valid storages are: [aws-iam-credentials, sso-token, session-credentials]")
+			return errors.New("please specify a valid storage to clear using --storage, for example: '--storage=session-credentials'. valid storages are: [aws-iam-credentials, sso-token, session-credentials, login-session]")
 		}
 
 		keys, err := selectedStorage.ListKeys()
@@ -103,7 +118,7 @@ var clearCommand = cli.Command{
 		}
 
 		for _, key := range keys {
-			clio.Infow("clearing cache", "storage", selectedStorage, "key", key)
+			clio.Infow("clearing cache", "storage", selection, "key", key)
 			err = selectedStorage.Clear(key)
 			if err != nil {
 				return err
