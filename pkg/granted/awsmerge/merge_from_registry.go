@@ -19,6 +19,10 @@ type RegistryOpts struct {
 	Name                    string
 	PrefixAllProfiles       bool
 	PrefixDuplicateProfiles bool
+	// AddAccountIDProfiles, if true, adds a copy of each synced profile
+	// named after its AWS account ID, so that it can be assumed by
+	// account ID as well as by name.
+	AddAccountIDProfiles bool
 }
 
 type DuplicateProfileError struct {
@@ -89,6 +93,10 @@ func WithRegistry(src *ini.File, dst *ini.File, opts RegistryOpts) (*ini.File, e
 
 	currentProfiles := tmp.SectionStrings()
 
+	// the profile sections written for this registry, in order.
+	// Used to generate account ID profiles once all profiles are merged.
+	var generatedProfiles []*ini.Section
+
 	// iterate each profile section from cloned repo
 	// add them to aws config file
 	// if there is a collision in the profile names then prefix with namespace.
@@ -145,6 +153,7 @@ func WithRegistry(src *ini.File, dst *ini.File, opts RegistryOpts) (*ini.File, e
 				return nil, err
 			}
 
+			generatedProfiles = append(generatedProfiles, f)
 			continue
 		}
 
@@ -164,6 +173,7 @@ func WithRegistry(src *ini.File, dst *ini.File, opts RegistryOpts) (*ini.File, e
 			if err != nil {
 				return nil, err
 			}
+			generatedProfiles = append(generatedProfiles, f)
 			continue
 		}
 
@@ -199,6 +209,15 @@ func WithRegistry(src *ini.File, dst *ini.File, opts RegistryOpts) (*ini.File, e
 			f.Comment = "# profile name has been prefixed due to duplication"
 		} else {
 			f.Comment = "# profile name has been prefixed due to duplication. \n" + sec.Comment
+		}
+
+		generatedProfiles = append(generatedProfiles, f)
+	}
+
+	if opts.AddAccountIDProfiles {
+		err := addAccountIDProfiles(tmp, generatedProfiles, opts)
+		if err != nil {
+			return nil, err
 		}
 	}
 

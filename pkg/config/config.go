@@ -119,6 +119,7 @@ type Registry struct {
 	Priority                int    `toml:"priority,omitempty"`
 	PrefixDuplicateProfiles bool   `toml:"prefixDuplicateProfiles,omitempty"`
 	PrefixAllProfiles       bool   `toml:"prefixAllProfiles,omitempty"`
+	AddAccountIDProfiles    bool   `toml:"addAccountIdProfiles,omitempty"`
 	Type                    string `toml:"type,omitempty"`
 }
 

@@ -32,6 +32,7 @@ var AddCommand = cli.Command{
 		&cli.StringFlag{Name: "ref", Usage: "Git ref (branch, tag, or commit) to checkout"},
 		&cli.BoolFlag{Name: "prefix-all-profiles", Aliases: []string{"pap"}, Usage: "Provide this flag if you want to append registry name to all profiles"},
 		&cli.BoolFlag{Name: "prefix-duplicate-profiles", Aliases: []string{"pdp"}, Usage: "Provide this flag if you want to append registry name to duplicate profiles"},
+		&cli.BoolFlag{Name: "add-account-id-profiles", Aliases: []string{"aaip"}, Usage: "Provide this flag if you want to add a copy of each profile named after its AWS account ID, so profiles can be assumed by account ID"},
 		&cli.BoolFlag{Name: "write-on-sync-failure", Aliases: []string{"wosf"}, Usage: "Always overwrite AWS config, even if sync fails (DEPRECATED)"},
 		&cli.StringSliceFlag{Name: "required-key", Aliases: []string{"r", "requiredKey"}, Usage: "Used to bypass the prompt or override user specific values"},
 		&cli.StringFlag{Name: "type", Value: "git", Usage: "specify the type of granted registry source you want to set up. Default: git"}},
@@ -56,6 +57,7 @@ var AddCommand = cli.Command{
 		ref := c.String("ref")
 		prefixAllProfiles := c.Bool("prefix-all-profiles")
 		prefixDuplicateProfiles := c.Bool("prefix-duplicate-profiles")
+		addAccountIDProfiles := c.Bool("add-account-id-profiles")
 		requiredKey := c.StringSlice("required-key")
 		priority := c.Int("priority")
 		registryType := c.String("type")
@@ -85,6 +87,7 @@ var AddCommand = cli.Command{
 			Priority:                priority,
 			PrefixDuplicateProfiles: prefixDuplicateProfiles,
 			PrefixAllProfiles:       prefixAllProfiles,
+			AddAccountIDProfiles:    addAccountIDProfiles,
 			Type:                    registryType,
 		}
 
@@ -115,6 +118,7 @@ var AddCommand = cli.Command{
 			Name:                    name,
 			PrefixAllProfiles:       prefixAllProfiles,
 			PrefixDuplicateProfiles: prefixDuplicateProfiles,
+			AddAccountIDProfiles:    addAccountIDProfiles,
 		})
 		var dpe awsmerge.DuplicateProfileError
 		if errors.As(err, &dpe) {
@@ -145,6 +149,7 @@ var AddCommand = cli.Command{
 				Name:                    name,
 				PrefixAllProfiles:       prefixAllProfiles,
 				PrefixDuplicateProfiles: true,
+				AddAccountIDProfiles:    addAccountIDProfiles,
 			})
 			if err != nil {
 				return fmt.Errorf("error after trying to merge profiles again: %w", err)
