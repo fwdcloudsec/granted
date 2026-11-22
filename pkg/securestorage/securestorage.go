@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path"
+	"sync"
 
 	"github.com/99designs/keyring"
 
@@ -11,6 +12,36 @@ import (
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/pkg/errors"
 )
+
+// fileKeyringPasswordEnvVar holds the password used to encrypt secrets in
+// the "file" keyring backend.
+const fileKeyringPasswordEnvVar = "CF_KEYRING_FILE_PASSWORD"
+
+var (
+	// fileKeyringPasswordWarning ensures the empty password warning is
+	// shown at most once per process.
+	fileKeyringPasswordWarning sync.Once
+
+	// warnf is the function used to emit the empty password warning.
+	// It is a variable so that tests can capture the output.
+	warnf = clio.Warnf
+)
+
+// fileKeyringPassword is the keyring.PromptFunc for the "file" backend. The
+// keyring library only calls it when the file backend is actually in use,
+// whether configured explicitly or reached as the last fallback, so this is
+// the one place where we know secrets are about to be encrypted or
+// decrypted with the value of fileKeyringPasswordEnvVar. If that value is empty, the secrets
+// are effectively unprotected, so warn the user.
+func fileKeyringPassword(_ string) (string, error) {
+	password := os.Getenv(fileKeyringPasswordEnvVar)
+	if password == "" {
+		fileKeyringPasswordWarning.Do(func() {
+			warnf("Granted's file keyring backend is storing secrets without a password, so they are not protected. Set %s to encrypt them with a password, or configure a different keyring backend.", fileKeyringPasswordEnvVar)
+		})
+	}
+	return password, nil
+}
 
 type SecureStorage struct {
 	StorageSuffix string
@@ -134,7 +165,7 @@ func (s *SecureStorage) openKeyring() (keyring.Keyring, error) {
 		// Fallback encrypted file
 		FileDir: secureStoragePath,
 
-		FilePasswordFunc: keyring.FixedStringPrompt(os.Getenv("CF_KEYRING_FILE_PASSWORD")),
+		FilePasswordFunc: fileKeyringPassword,
 	}
 
 	// enable debug logging if the verbose flag is set in the CLI
