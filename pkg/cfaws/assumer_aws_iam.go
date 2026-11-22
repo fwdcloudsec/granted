@@ -95,7 +95,7 @@ func (aia *AwsIamAssumer) AssumeTerminal(ctx context.Context, c *Profile, config
 				}
 			} else {
 				// set the token provider up
-				aro.TokenProvider = MfaTokenProvider
+				aro.TokenProvider = MfaTokenProviderFor(c)
 			}
 			aro.Duration = configOpts.Duration
 			if c.AWSConfig.ExternalID != "" {
@@ -268,7 +268,7 @@ func (aia *AwsIamAssumer) getTemporaryCreds(ctx context.Context, cfg aws.Config,
 
 	mfaCode := configOpts.MFATokenCode
 	if mfaCode == "" {
-		code, err := MfaTokenProvider()
+		code, err := MfaTokenProviderFor(c)()
 		if err != nil {
 			return aws.Credentials{}, err
 		}

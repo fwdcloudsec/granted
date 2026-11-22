@@ -2,8 +2,11 @@ package cfaws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -15,6 +18,7 @@ import (
 	"github.com/fwdcloudsec/granted/pkg/config"
 	"github.com/fwdcloudsec/granted/pkg/securestorage"
 	"github.com/fwdcloudsec/granted/pkg/testable"
+	"github.com/kballard/go-shellquote"
 )
 
 func TypeCredsToAwsCreds(c types.Credentials) aws.Credentials {
@@ -121,10 +125,61 @@ func GetCredentialsCreds(ctx context.Context, c *Profile) (aws.Credentials, erro
 
 }
 
+// MfaTokenProvider prompts for an MFA code.
 func MfaTokenProvider() (string, error) {
 	in := survey.Input{Message: "MFA Token"}
 	var out string
 	withStdio := survey.WithStdio(os.Stdin, os.Stderr, os.Stderr)
 	err := testable.AskOne(&in, &out, withStdio)
 	return out, err
+}
+
+// MfaTokenProviderFor returns a token provider for the profile which holds the
+// mfa_serial. If that profile has a 'granted_mfa_command' key, the command is
+// split into arguments (no shell is involved) and run, and its trimmed stdout
+// is used as the code. The serial is exposed to the command as
+// GRANTED_MFA_SERIAL. If the command fails or prints nothing, it falls back to
+// prompting.
+func MfaTokenProviderFor(p *Profile) func() (string, error) {
+	command := p.CustomGrantedProperty("mfa_command")
+	if command == "" {
+		return MfaTokenProvider
+	}
+	return func() (string, error) {
+		code, err := runMfaCommand(command, p.AWSConfig.MFASerial)
+		if err == nil {
+			return code, nil
+		}
+		clio.Warnf("granted_mfa_command failed, falling back to prompt: %s", err)
+		return MfaTokenProvider()
+	}
+}
+
+func runMfaCommand(command, serial string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	args, err := shellquote.Split(command)
+	if err != nil {
+		return "", fmt.Errorf("parsing command: %w", err)
+	}
+	if len(args) == 0 {
+		return "", errors.New("command is empty")
+	}
+
+	// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
+	// The command is read from the user's local AWS config file, not from untrusted input.
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	cmd.Env = append(os.Environ(), "GRANTED_MFA_SERIAL="+serial)
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	code := strings.TrimSpace(string(out))
+	if code == "" {
+		return "", errors.New("command returned an empty MFA code")
+	}
+	return code, nil
 }

@@ -54,7 +54,7 @@ func (cpa *CredentialProcessAssumer) AssumeTerminal(ctx context.Context, c *Prof
 							return configOpts.MFATokenCode, nil
 						}
 					} else {
-						aro.TokenProvider = MfaTokenProvider
+						aro.TokenProvider = MfaTokenProviderFor(p)
 					}
 				} else if c.AWSConfig.MFASerial != "" {
 					aro.SerialNumber = &c.AWSConfig.MFASerial
@@ -63,7 +63,7 @@ func (cpa *CredentialProcessAssumer) AssumeTerminal(ctx context.Context, c *Prof
 							return configOpts.MFATokenCode, nil
 						}
 					} else {
-						aro.TokenProvider = MfaTokenProvider
+						aro.TokenProvider = MfaTokenProviderFor(c)
 					}
 				}
 				aro.Duration = configOpts.Duration
@@ -86,7 +86,7 @@ func (cpa *CredentialProcessAssumer) AssumeTerminal(ctx context.Context, c *Prof
 						return configOpts.MFATokenCode, nil
 					}
 				} else {
-					aro.TokenProvider = MfaTokenProvider
+					aro.TokenProvider = MfaTokenProviderFor(c)
 				}
 			}
 			aro.Duration = configOpts.Duration
